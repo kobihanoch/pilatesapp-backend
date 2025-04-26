@@ -74,7 +74,7 @@ export const createUser = async (req, res) => {
 // Get all users
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find();
+    const users = await User.find().select("-password");
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -82,9 +82,22 @@ export const getAllUsers = async (req, res) => {
 };
 
 // Get a user by ID
+export const getAuthenticatedUserById = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password +role");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get a user by ID (Admin route)
 export const getUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select("+password +role");
+    const user = await User.findById(req.params.id).select("-password +role");
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -110,6 +123,30 @@ export const updateUser = async (req, res) => {
     user.birthDate = birthDate || user.birthDate;
     user.gender = gender || user.gender;
     user.role = role || user.role;
+
+    const updatedUser = await user.save();
+
+    res.json(updatedUser);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Update authenticated user by ID
+export const updateAuthenticatedUser = async (req, res) => {
+  try {
+    const { username, fullName, email, birthDate, gender } = req.body;
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.username = username || user.username;
+    user.fullName = fullName || user.fullName;
+    user.email = email || user.email;
+    user.birthDate = birthDate || user.birthDate;
+    user.gender = gender || user.gender;
 
     const updatedUser = await user.save();
 

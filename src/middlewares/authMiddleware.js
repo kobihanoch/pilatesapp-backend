@@ -19,9 +19,7 @@ export const protect = async (req, res, next) => {
       return res.status(401).json({ message: "Token has been revoked" });
     }
 
-    req.user = {
-      barberId: decoded.barberId,
-    };
+    req.user = await User.findById(decoded.userId).select("-password +role");
 
     next();
   } catch (error) {
