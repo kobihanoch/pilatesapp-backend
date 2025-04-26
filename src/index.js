@@ -1,9 +1,10 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import connectDB from "./config/db.js";
 import userRoute from "./routes/userRoute.js";
 import authRoute from "./routes/authRoute.js";
-import connectDB from "./config/db.js";
+import sessionRoute from "./routes/sessionRoute.js";
 
 // Config-------------------------------------------------------------------
 dotenv.config();
@@ -34,3 +35,6 @@ app.use("/api/users", userRoute);
 
 // Auth
 app.use("/api/auth", authRoute);
+
+// Sessions
+app.use("/api/sessions", sessionRoute);
