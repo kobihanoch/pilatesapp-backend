@@ -4,10 +4,17 @@ import User from "../models/userModel.js";
 // Create a new user
 export const createUser = async (req, res) => {
   try {
-    const { username, email, password, birthDate, gender } = req.body;
+    const { username, fullName, email, password, birthDate, gender } = req.body;
 
     // Basic field validation
-    if (!username || !email || !password || !birthDate || !gender) {
+    if (
+      !username ||
+      !fullName ||
+      !email ||
+      !password ||
+      !birthDate ||
+      !gender
+    ) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
@@ -37,6 +44,7 @@ export const createUser = async (req, res) => {
     // Creating the user with hashed password
     const user = await User.create({
       username,
+      fullName,
       email,
       password: hashedPassword,
       birthDate,
@@ -49,6 +57,7 @@ export const createUser = async (req, res) => {
       user: {
         _id: user._id,
         username: user.username,
+        fullName: user.fullName,
         email: user.email,
         birthDate: user.birthDate,
         gender: user.gender,
@@ -88,7 +97,7 @@ export const getUserById = async (req, res) => {
 // Update a user by ID
 export const updateUser = async (req, res) => {
   try {
-    const { username, email, birthDate, gender, role } = req.body;
+    const { username, fullName, email, birthDate, gender, role } = req.body;
 
     const user = await User.findById(req.params.id);
     if (!user) {
@@ -96,6 +105,7 @@ export const updateUser = async (req, res) => {
     }
 
     user.username = username || user.username;
+    user.fullName = fullName || user.fullName;
     user.email = email || user.email;
     user.birthDate = birthDate || user.birthDate;
     user.gender = gender || user.gender;
