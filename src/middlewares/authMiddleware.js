@@ -38,6 +38,11 @@ export const protectAdmin = async (req, res, next) => {
     try {
       token = req.headers.authorization.split(" ")[1];
 
+      const blacklisted = await BlacklistedToken.findOne({ token });
+      if (blacklisted) {
+        return res.status(401).json({ message: "Token has been revoked" });
+      }
+
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
       req.user = await User.findById(decoded.userId).select("-password");
@@ -55,11 +60,9 @@ export const protectAdmin = async (req, res, next) => {
       next();
     } catch (error) {
       console.error(error);
-      res.status(401).json({ message: "Token failed" });
+      res.status(401).json({ message: "Invalid or expired token" });
     }
-  }
-
-  if (!token) {
+  } else {
     res.status(401).json({ message: "Not authorized, no token" });
   }
 };
