@@ -1,13 +1,8 @@
 import mongoose from "mongoose";
 
-// Pilates session model
+// Pilates group session model
 const sessionSchema = new mongoose.Schema(
   {
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
     date: { type: Date, required: true },
     duration: { type: Number, required: true }, // in minutes
     type: { type: String, required: true }, // e.g., "reformer", "mat", etc.
@@ -21,6 +16,16 @@ const sessionSchema = new mongoose.Schema(
       type: String,
       enum: ["studio", "home", "online"],
       default: "studio",
+    },
+    participants: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+    maxParticipants: {
+      type: Number,
+      default: 10,
     },
   },
   { timestamps: true }

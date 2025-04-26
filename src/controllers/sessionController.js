@@ -2,19 +2,20 @@ import Session from "../models/sessionModel.js";
 
 // @desc    Create a new session
 // @route   POST /sessions/create
-// @access  Private (Logged-in users)
+// @access  Private/Admin
 export const createSession = async (req, res) => {
   try {
-    const { date, duration, type, notes, status, location } = req.body;
+    const { date, duration, type, notes, status, location, maxParticipants } =
+      req.body;
 
     const newSession = await Session.create({
-      userId: req.user._id,
       date,
       duration,
       type,
       notes,
       status,
       location,
+      maxParticipants,
     });
 
     res.status(201).json(newSession);
@@ -24,12 +25,31 @@ export const createSession = async (req, res) => {
   }
 };
 
-// @desc    Get all sessions (Admin only)
+// @desc    Get all sessions the user is registered to
+// @route   GET /sessions/my
+// @access  Private
+export const getMySessions = async (req, res) => {
+  try {
+    const sessions = await Session.find({
+      participants: req.user._id,
+    }).populate("participants", "username email");
+
+    res.json(sessions);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to fetch your sessions" });
+  }
+};
+
+// @desc    Get all sessions
 // @route   GET /sessions/all
 // @access  Private/Admin
 export const getAllSessions = async (req, res) => {
   try {
-    const sessions = await Session.find().populate("userId", "username email");
+    const sessions = await Session.find().populate(
+      "participants",
+      "username email"
+    );
 
     res.json(sessions);
   } catch (error) {
@@ -38,29 +58,13 @@ export const getAllSessions = async (req, res) => {
   }
 };
 
-// @desc    Get all sessions of a specific user
-// @route   GET /sessions/all/:userId
-// @access  Private
-export const getAllSessionsOfUser = async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    const sessions = await Session.find({ userId });
-
-    res.json(sessions);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Failed to fetch user's sessions" });
-  }
-};
-
-// @desc    Get a single session by ID
+// @desc    Get a session by ID
 // @route   GET /sessions/:id
 // @access  Private
 export const getSessionById = async (req, res) => {
   try {
     const session = await Session.findById(req.params.id).populate(
-      "userId",
+      "participants",
       "username email"
     );
 
@@ -93,6 +97,7 @@ export const updateSession = async (req, res) => {
       "notes",
       "status",
       "location",
+      "maxParticipants",
     ];
     fieldsToUpdate.forEach((field) => {
       if (req.body[field] !== undefined) {
@@ -126,5 +131,60 @@ export const deleteSession = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Failed to delete session" });
+  }
+};
+
+// @desc    Register a user to a session
+// @route   POST /sessions/register/:id
+// @access  Private
+export const registerToSession = async (req, res) => {
+  try {
+    const session = await Session.findById(req.params.id);
+
+    if (!session) {
+      return res.status(404).json({ message: "Session not found" });
+    }
+
+    if (session.participants.includes(req.user._id)) {
+      return res
+        .status(400)
+        .json({ message: "Already registered to this session" });
+    }
+
+    if (session.participants.length >= session.maxParticipants) {
+      return res.status(400).json({ message: "Session is full" });
+    }
+
+    session.participants.push(req.user._id);
+    await session.save();
+
+    res.status(200).json({ message: "Registered successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to register to session" });
+  }
+};
+
+// @desc    Unregister a user from a session
+// @route   POST /sessions/unregister/:id
+// @access  Private
+export const unregisterFromSession = async (req, res) => {
+  try {
+    const session = await Session.findById(req.params.id);
+
+    if (!session) {
+      return res.status(404).json({ message: "Session not found" });
+    }
+
+    session.participants = session.participants.filter(
+      (participantId) => participantId.toString() !== req.user._id.toString()
+    );
+
+    await session.save();
+
+    res.status(200).json({ message: "Unregistered successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to unregister from session" });
   }
 };
