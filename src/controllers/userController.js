@@ -34,13 +34,15 @@ export const createUser = async (req, res) => {
 
     res.status(201).json({
       message: "User created susccessfully!",
-      _id: user._id,
-      username: user.username,
-      email: user.email,
-      birthDate: user.birthDate,
-      gender: user.gender,
-      role: user.role,
-      createdAt: user.createdAt,
+      user: {
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        birthDate: user.birthDate,
+        gender: user.gender,
+        role: user.role,
+        createdAt: user.createdAt,
+      },
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
