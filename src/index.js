@@ -2,9 +2,9 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import connectDB from "./config/db.js";
-import userRoute from "./routes/userRoute.js";
-import authRoute from "./routes/authRoute.js";
-import sessionRoute from "./routes/sessionRoute.js";
+import userRoutes from "./routes/userRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
+import sessionRoutes from "./routes/sessionRoutes.js";
 
 // Config-------------------------------------------------------------------
 dotenv.config();
@@ -31,10 +31,10 @@ app.listen(PORT, () => {
 // API Routes---------------------------------------------------------------
 
 // Users
-app.use("/api/users", userRoute);
+app.use("/api/users", userRoutes);
 
 // Auth
-app.use("/api/auth", authRoute);
+app.use("/api/auth", authRoutes);
 
 // Sessions
-app.use("/api/sessions", sessionRoute);
+app.use("/api/sessions", sessionRoutes);
