@@ -5,8 +5,16 @@ import Session from "../models/sessionModel.js";
 // @access  Private/Admin
 export const createSession = async (req, res) => {
   try {
-    const { date, duration, type, notes, status, location, maxParticipants } =
-      req.body;
+    const {
+      date,
+      duration,
+      type,
+      notes,
+      status,
+      location,
+      participants,
+      maxParticipants,
+    } = req.body;
 
     const newSession = await Session.create({
       date,
@@ -15,6 +23,7 @@ export const createSession = async (req, res) => {
       notes,
       status,
       location,
+      participants,
       maxParticipants,
     });
 
