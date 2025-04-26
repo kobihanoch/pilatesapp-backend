@@ -4,15 +4,27 @@ import User from "../models/userModel.js";
 // Create a new user
 export const createUser = async (req, res) => {
   try {
-    const { username, email, password, birthDate, gender, role } = req.body;
+    const { username, email, password, birthDate, gender } = req.body;
 
-    if (!password || !role) {
-      return res
-        .status(400)
-        .json({ message: "Password and role are required" });
+    // Basic field validation
+    if (!username || !email || !password || !birthDate || !gender) {
+      return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Checks if the user already exists
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: "Invalid email format" });
+    }
+
+    // Password strength validation (at least 6 characters)
+    /*if (password.length < 6) {
+      return res
+        .status(400)
+        .json({ message: "Password must be at least 6 characters long" });
+    }*/
+
+    // Check if user already exists
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ message: "User already exists" });
@@ -29,21 +41,24 @@ export const createUser = async (req, res) => {
       password: hashedPassword,
       birthDate,
       gender,
-      role,
+      role: "user", // Always default to "user" at creation
     });
 
     res.status(201).json({
-      message: "User created susccessfully!",
-      _id: user._id,
-      username: user.username,
-      email: user.email,
-      birthDate: user.birthDate,
-      gender: user.gender,
-      role: user.role,
-      createdAt: user.createdAt,
+      message: "User created successfully!",
+      user: {
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        birthDate: user.birthDate,
+        gender: user.gender,
+        role: user.role,
+        createdAt: user.createdAt,
+      },
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Error creating user:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
