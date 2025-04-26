@@ -4,38 +4,39 @@ import User from "../models/userModel.js";
 
 export const protect = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
+    const token = req.cookies.token;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    if (!token) {
       return res.status(401).json({ message: "No token provided" });
     }
-
-    const token = authHeader.split(" ")[1];
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     const blacklisted = await BlacklistedToken.findOne({ token });
     if (blacklisted) {
       return res.status(401).json({ message: "Token has been revoked" });
     }
 
-    req.user = await User.findById(decoded.userId).select("-password +role");
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    req.user = await User.findById(decoded.id).select("-password +role");
+
+    if (!req.user) {
+      return res.status(401).json({ message: "User not found" });
+    }
 
     next();
   } catch (error) {
+    console.error(error);
     res.status(401).json({ message: "Invalid or expired token" });
   }
 };
 
 export const protectAdmin = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
+    const token = req.cookies.token;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    if (!token) {
       return res.status(401).json({ message: "No token provided" });
     }
-
-    const token = authHeader.split(" ")[1];
 
     const blacklisted = await BlacklistedToken.findOne({ token });
     if (blacklisted) {
@@ -44,10 +45,10 @@ export const protectAdmin = async (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    req.user = await User.findById(decoded.userId).select("-password +role");
+    req.user = await User.findById(decoded.id).select("-password +role");
 
     if (!req.user) {
-      return res.status(401).json({ message: "Not authorized" });
+      return res.status(401).json({ message: "User not found" });
     }
 
     if (req.user.role !== "admin") {
