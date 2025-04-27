@@ -1,8 +1,3 @@
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import User from "../models/userModel.js";
-import BlacklistedToken from "../models/blacklistedTokenModel.js";
-
 // Login a user
 export const loginUser = async (req, res) => {
   const { username, password } = req.body;
@@ -24,8 +19,8 @@ export const loginUser = async (req, res) => {
   res.cookie("token", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "Strict",
-    maxAge: 24 * 60 * 60 * 1000, // 1 day
+    sameSite: "None",
+    maxAge: 24 * 60 * 60 * 1000,
   });
 
   res.status(200).json({
@@ -56,9 +51,7 @@ export const logoutUser = async (req, res) => {
       return res.status(400).json({ message: "Invalid token" });
     }
 
-    const expiresAt = new Date(decoded.exp * 1000); // JWT exp is in seconds
-
-    console.log("Token expires at:", expiresAt);
+    const expiresAt = new Date(decoded.exp * 1000);
 
     const blacklisted = await BlacklistedToken.findOne({ token });
 
@@ -68,8 +61,12 @@ export const logoutUser = async (req, res) => {
 
     await BlacklistedToken.create({ token, expiresAt });
 
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "None",
+    });
     res.status(200).json({ message: "Logged out successfully" });
-    res.clearCookie("token");
   } catch (error) {
     console.error("Logout Error:", error);
     res.status(500).json({ message: "Server error during logout" });
