@@ -18,8 +18,9 @@ app.use(cookieParser());
 
 // CORS allowance-----------------------------------------------------
 const allowedOrigins = [
-  "http://localhost:3000", // Devleopment
-  "https://myapp.com", // Production
+  "http://localhost:3000", // Development
+  "https://pilates-backend-wk9s.onrender.com", // Backend Render
+  "https://myapp.com", // Production frontend
 ];
 
 app.use(
