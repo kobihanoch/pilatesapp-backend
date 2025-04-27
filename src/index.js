@@ -5,6 +5,7 @@ import connectDB from "./config/db.js";
 import userRoutes from "./routes/userRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import sessionRoutes from "./routes/sessionRoutes.js";
+import cookieParser from "cookie-parser";
 
 // Config-------------------------------------------------------------------
 dotenv.config();
@@ -13,8 +14,26 @@ const app = express();
 // Port
 const PORT = process.env.PORT || 5000;
 
-// Using cors and express.json() middleware
-app.use(cors());
+app.use(cookieParser());
+
+// CORS allowance-----------------------------------------------------
+const allowedOrigins = [
+  "http://localhost:3000", // Devleopment
+  "https://myapp.com", // Production
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 connectDB(); // Connect to MongoDB
 
