@@ -1,3 +1,8 @@
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import User from "../models/userModel.js";
+import BlacklistedToken from "../models/blacklistedTokenModel.js";
+
 // Login a user
 export const loginUser = async (req, res) => {
   const { username, password } = req.body;
