@@ -89,19 +89,25 @@ export const logoutUser = async (req, res) => {
       : new Date(Date.now() + 24 * 60 * 60 * 1000); // Default to 1 day
 
     // Check if tokens are already inside blacklisted, if not put them inside
-    const blacklistedAccess = await BlacklistedToken.findOne({
-      token: accessTokenCookies,
-    });
-
-    const blackListedRefresh = await BlacklistedToken.findOne({
-      token: refreshTokenCookies,
-    });
-
-    if (!blacklistedAccess) {
-      await BlacklistedToken.create({ token: accessTokenCookies, expiresAt });
+    if (accessTokenCookies) {
+      const blacklistedAccess = await BlacklistedToken.findOne({
+        token: accessTokenCookies,
+      });
+      if (!blacklistedAccess) {
+        await BlacklistedToken.create({ token: accessTokenCookies, expiresAt });
+      }
     }
-    if (!blackListedRefresh) {
-      await BlacklistedToken.create({ token: refreshTokenCookies, expiresAt });
+
+    if (refreshTokenCookies) {
+      const blackListedRefresh = await BlacklistedToken.findOne({
+        token: refreshTokenCookies,
+      });
+      if (!blackListedRefresh) {
+        await BlacklistedToken.create({
+          token: refreshTokenCookies,
+          expiresAt,
+        });
+      }
     }
 
     // Clear tokens from cookies
@@ -172,6 +178,12 @@ export const refreshToken = async (req, res) => {
 
   if (!refreshToken) {
     return res.status(401).json({ message: "No refresh token provided" });
+  }
+  const blackListedRefresh = await BlacklistedToken.findOne({
+    token: refreshToken,
+  });
+  if (blackListedRefresh) {
+    return res.status(401).json({ message: "Refresh token is blacklisted." });
   }
 
   try {
