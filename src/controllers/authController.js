@@ -77,3 +77,43 @@ export const logoutUser = async (req, res) => {
     res.status(500).json({ message: "Server error during logout" });
   }
 };
+
+// Check if user is authenticated
+export const checkIfUserAuthenticated = async (req, res) => {
+  const token = req.cookies.token;
+
+  if (!token) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await User.findById(decoded.id).select("-password +role");
+
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    res.status(200).json({
+      message: "User is authenticated",
+      user: {
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        birthDate: user.birthDate,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error("Authentication Error:", error);
+    if (
+      error.name === "TokenExpiredError" ||
+      error.name === "JsonWebTokenError"
+    ) {
+      return res.status(401).json({ message: "Invalid or expired token" });
+    }
+
+    res.status(500).json({ message: "Server error during authentication" });
+  }
+};
