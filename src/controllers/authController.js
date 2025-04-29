@@ -5,58 +5,63 @@ import BlacklistedToken from "../models/blacklistedTokenModel.js";
 
 // Login a user
 export const loginUser = async (req, res) => {
-  const { username, password } = req.body;
+  try {
+    const { username, password } = req.body;
 
-  const user = await User.findOne({ username }).select("+password");
-  if (!user) {
-    return res.status(401).json({ message: "Invalid credentials" });
-  }
+    const user = await User.findOne({ username }).select("+password");
+    if (!user) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
 
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) {
-    return res.status(401).json({ message: "Invalid credentials" });
-  }
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
 
-  /*const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+    /*const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
     expiresIn: "1d",
   });*/
 
-  const accessToken = jwt.sign(
-    { id: user._id, role: user.role },
-    process.env.JWT_ACCESS_SECRET,
-    { expiresIn: "15m" }
-  );
+    const accessToken = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_ACCESS_SECRET,
+      { expiresIn: "15m" }
+    );
 
-  const refreshToken = jwt.sign(
-    { id: user._id, role: user.role },
-    process.env.JWT_REFRESH_SECRET,
-    { expiresIn: "1d" }
-  );
+    const refreshToken = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_REFRESH_SECRET,
+      { expiresIn: "1d" }
+    );
 
-  /*res.cookie("token", token, {
+    /*res.cookie("token", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
     maxAge: 24 * 60 * 60 * 1000,
   });*/
 
-  res.cookie("accessToken", accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-    maxAge: 15 * 60 * 1000, // 15 minutes
-  });
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
 
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-    maxAge: 24 * 60 * 60 * 1000, // 1 day
-  });
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+    });
 
-  res.status(200).json({
-    message: "Login successful",
-  });
+    res.status(200).json({
+      message: "Login successful",
+    });
+  } catch (error) {
+    console.error("Login Error:", error);
+    res.status(500).json({ message: "Server error during login" });
+  }
 };
 
 // Logout a user
@@ -68,55 +73,35 @@ export const logoutUser = async (req, res) => {
       return res.status(400).json({ message: "No token provided" });
     }*/
 
-    const accessToken = req.cookies.accessToken;
-    const refreshToken = req.cookies.refreshToken;
-
-    const decodedAccess = jwt.decode(accessToken);
-    const decodedRefresh = jwt.decode(refreshToken);
-
-    /*if (!decoded || !decoded.exp) {
-      return res.status(400).json({ message: "Invalid token" });
-    }*/
+    const accessTokenCookies = req.cookies.accessToken;
+    const refreshTokenCookies = req.cookies.refreshToken;
 
     // Check if the tokens are expired
-    if (!decodedAccess || !decodedAccess.exp) {
-      return res.status(400).json({ message: "Invalid token" });
+    if (!accessTokenCookies && !refreshTokenCookies) {
+      return res.status(200).json({ message: "Already logged out" });
     }
 
-    if (!decodedRefresh || !decodedRefresh.exp) {
-      return res.status(400).json({ message: "Invalid token" });
-    }
+    const decodedAccess = jwt.decode(accessTokenCookies);
+    const decodedRefresh = jwt.decode(refreshTokenCookies);
 
-    const expiresAt = new Date(decodedRefresh.exp * 1000);
-
-    /*res.clearCookie("token", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-    });*/
-
-    /*const blacklisted = await BlacklistedToken.findOne({ token });
-
-    if (blacklisted) {
-      return res.status(200).json({ message: "Token already blacklisted" });
-    }
-
-    await BlacklistedToken.create({ token, expiresAt });*/
+    const expiresAt = decodedRefresh?.exp
+      ? new Date(decodedRefresh.exp * 1000)
+      : new Date(Date.now() + 24 * 60 * 60 * 1000); // Default to 1 day
 
     // Check if tokens are already inside blacklisted, if not put them inside
     const blacklistedAccess = await BlacklistedToken.findOne({
-      token: accessToken,
+      token: accessTokenCookies,
     });
 
     const blackListedRefresh = await BlacklistedToken.findOne({
-      token: refreshToken,
+      token: refreshTokenCookies,
     });
 
     if (!blacklistedAccess) {
-      BlacklistedToken.create({ token: accessToken, expiresAt });
+      await BlacklistedToken.create({ token: accessTokenCookies, expiresAt });
     }
     if (!blackListedRefresh) {
-      BlacklistedToken.create({ token: refreshToken, expiresAt });
+      await BlacklistedToken.create({ token: refreshTokenCookies, expiresAt });
     }
 
     // Clear tokens from cookies
