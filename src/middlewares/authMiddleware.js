@@ -4,18 +4,18 @@ import User from "../models/userModel.js";
 
 export const protect = async (req, res, next) => {
   try {
-    const token = req.cookies.token;
+    const accessToken = req.cookies.accessToken;
 
-    if (!token) {
-      return res.status(401).json({ message: "No token provided" });
+    if (!accessToken) {
+      return res.status(401).json({ message: "No access token provided" });
     }
 
-    const blacklisted = await BlacklistedToken.findOne({ token });
+    const blacklisted = await BlacklistedToken.findOne({ token: accessToken });
     if (blacklisted) {
-      return res.status(401).json({ message: "Token has been revoked" });
+      return res.status(401).json({ message: "Access token has been revoked" });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(accessToken, process.env.JWT_ACCESS_SECRET);
 
     req.user = await User.findById(decoded.id).select("-password +role");
 
@@ -25,25 +25,25 @@ export const protect = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error(error);
-    res.status(401).json({ message: "Invalid or expired token" });
+    console.error("Protect Middleware Error:", error);
+    return res.status(401).json({ message: "Invalid or expired access token" });
   }
 };
 
 export const protectAdmin = async (req, res, next) => {
   try {
-    const token = req.cookies.token;
+    const accessToken = req.cookies.accessToken;
 
-    if (!token) {
-      return res.status(401).json({ message: "No token provided" });
+    if (!accessToken) {
+      return res.status(401).json({ message: "No access token provided" });
     }
 
-    const blacklisted = await BlacklistedToken.findOne({ token });
+    const blacklisted = await BlacklistedToken.findOne({ token: accessToken });
     if (blacklisted) {
-      return res.status(401).json({ message: "Token has been revoked" });
+      return res.status(401).json({ message: "Access token has been revoked" });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(accessToken, process.env.JWT_ACCESS_SECRET);
 
     req.user = await User.findById(decoded.id).select("-password +role");
 
@@ -57,7 +57,7 @@ export const protectAdmin = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error(error);
-    res.status(401).json({ message: "Invalid or expired token" });
+    console.error("ProtectAdmin Middleware Error:", error);
+    return res.status(401).json({ message: "Invalid or expired access token" });
   }
 };
