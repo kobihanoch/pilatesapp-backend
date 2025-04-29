@@ -180,3 +180,43 @@ export const checkIfUserAuthenticated = async (req, res) => {
     res.status(500).json({ message: "Server error during authentication" });
   }
 };
+
+// Refresh token
+export const refreshToken = async (req, res) => {
+  const refreshToken = req.cookies.refreshToken;
+
+  if (!refreshToken) {
+    return res.status(401).json({ message: "No refresh token provided" });
+  }
+
+  try {
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+
+    const user = await User.findById(decoded.id).select("-password +role");
+
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    const newAccessToken = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_ACCESS_SECRET,
+      { expiresIn: "15m" }
+    );
+
+    res.cookie("accessToken", newAccessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
+
+    res.status(200).json({ message: "Access token refreshed" });
+  } catch (error) {
+    console.error("Refresh Token Error:", error);
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Refresh token expired" });
+    }
+    res.status(500).json({ message: "Server error during token refresh" });
+  }
+};
