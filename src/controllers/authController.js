@@ -24,7 +24,7 @@ export const loginUser = async (req, res) => {
   res.cookie("token", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "None",
+    sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
     maxAge: 24 * 60 * 60 * 1000,
   });
 
@@ -58,19 +58,20 @@ export const logoutUser = async (req, res) => {
 
     const expiresAt = new Date(decoded.exp * 1000);
 
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+    });
+
     const blacklisted = await BlacklistedToken.findOne({ token });
 
     if (blacklisted) {
-      return res.status(400).json({ message: "Token already blacklisted" });
+      return res.status(200).json({ message: "Token already blacklisted" });
     }
 
     await BlacklistedToken.create({ token, expiresAt });
 
-    res.clearCookie("token", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "None",
-    });
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
     console.error("Logout Error:", error);
@@ -97,13 +98,6 @@ export const checkIfUserAuthenticated = async (req, res) => {
 
     res.status(200).json({
       message: "User is authenticated",
-      user: {
-        _id: user._id,
-        username: user.username,
-        email: user.email,
-        birthDate: user.birthDate,
-        role: user.role,
-      },
     });
   } catch (error) {
     console.error("Authentication Error:", error);
