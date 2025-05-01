@@ -41,7 +41,7 @@ export const getMySessions = async (req, res) => {
   try {
     const sessions = await Session.find({
       participants: req.user._id,
-    }).populate("participants", "username email");
+    }).populate("participants", "username email fullName");
 
     res.json(sessions);
   } catch (error) {
