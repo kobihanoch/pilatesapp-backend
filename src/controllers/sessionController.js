@@ -197,3 +197,27 @@ export const unregisterFromSession = async (req, res) => {
     res.status(500).json({ message: "Failed to unregister from session" });
   }
 };
+
+// @desc    Gets all sessions until next month
+// @route   GET /sessions/soon
+// @access  Private
+
+export const getAllSessionsForAMonthFromToday = async (req, res) => {
+  try {
+    const today = new Date();
+    const nextMonth = new Date();
+    nextMonth.setMonth(today.getMonth() + 1);
+
+    const sessions = await Session.find({
+      date: {
+        $gte: today,
+        $lt: nextMonth,
+      },
+    }).populate("participants", "username email");
+
+    res.json(sessions);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to fetch sessions" });
+  }
+};

@@ -9,6 +9,7 @@ import {
   registerToSession,
   unregisterFromSession,
   getMySessions,
+  getAllSessionsForAMonthFromToday,
 } from "../controllers/sessionController.js";
 
 const router = Router();
@@ -21,6 +22,7 @@ router.delete("/delete/:id", protectAdmin, deleteSession); // Admin - Delete a s
 
 // User routes
 router.get("/my", protect, getMySessions); // User - Get all sessions the user registered to
+router.get("/soon", protect, getAllSessionsForAMonthFromToday); // User - gets all sessions for next month
 router.get("/:id", protect, getSessionById); // User - View details of a specific session
 router.post("/register/:id", protect, registerToSession); // User - Register to a session
 router.post("/unregister/:id", protect, unregisterFromSession); // User - Unregister from a session
