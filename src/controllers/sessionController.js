@@ -205,6 +205,7 @@ export const unregisterFromSession = async (req, res) => {
 export const getAllSessionsForAMonthFromToday = async (req, res) => {
   try {
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const nextMonth = new Date();
     nextMonth.setMonth(today.getMonth() + 1);
 
