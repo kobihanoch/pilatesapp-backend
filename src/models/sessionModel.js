@@ -4,18 +4,18 @@ import mongoose from "mongoose";
 const sessionSchema = new mongoose.Schema(
   {
     date: { type: Date, required: true },
+    time: { type: String, required: true }, // e.g., "20:00"
     duration: { type: Number, required: true }, // in minutes
     type: { type: String, required: true }, // e.g., "reformer", "mat", etc.
     notes: { type: String },
     status: {
       type: String,
-      enum: ["scheduled", "completed", "canceled"],
-      default: "scheduled",
+      enum: ["מתוכנן", "בוטל", "הושלם"],
+      default: "מתוכנן",
     },
     location: {
       type: String,
-      enum: ["studio", "home", "online"],
-      default: "studio",
+      default: "סטודיו",
     },
     participants: [
       {

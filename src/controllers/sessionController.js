@@ -7,6 +7,7 @@ export const createSession = async (req, res) => {
   try {
     const {
       date,
+      time,
       duration,
       type,
       notes,
@@ -18,6 +19,7 @@ export const createSession = async (req, res) => {
 
     const newSession = await Session.create({
       date,
+      time,
       duration,
       type,
       notes,
@@ -41,7 +43,7 @@ export const getMySessions = async (req, res) => {
   try {
     const sessions = await Session.find({
       participants: req.user._id,
-    }).populate("participants", "username email");
+    }).populate("participants", "username email fullName");
 
     res.json(sessions);
   } catch (error) {
@@ -195,5 +197,31 @@ export const unregisterFromSession = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Failed to unregister from session" });
+  }
+};
+
+// @desc    Gets all sessions until next month
+// @route   GET /sessions/soon
+// @access  Private
+export const getAllSessionsForThisYearFromSelectedDate = async (req, res) => {
+  try {
+    const selectedDate = new Date(req.query.date);
+    //console.log(selectedDate);
+    const selectedYear = selectedDate.getFullYear();
+
+    const startOfYear = new Date(`${selectedYear}-01-01T00:00:00Z`);
+    const endOfYear = new Date(`${selectedYear + 1}-01-01T00:00:00Z`);
+
+    const sessions = await Session.find({
+      date: {
+        $gte: startOfYear,
+        $lt: endOfYear,
+      },
+    }).populate("participants", "username email");
+
+    res.json(sessions);
+  } catch (error) {
+    console.error("Failed to fetch yearly sessions:", error);
+    res.status(500).json({ message: "Failed to fetch sessions" });
   }
 };
