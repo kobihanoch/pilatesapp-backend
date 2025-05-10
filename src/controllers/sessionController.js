@@ -206,7 +206,7 @@ export const unregisterFromSession = async (req, res) => {
 export const getAllSessionsForThisYearFromSelectedDate = async (req, res) => {
   try {
     const selectedDate = new Date(req.query.date);
-    console.log(selectedDate);
+    //console.log(selectedDate);
     const selectedYear = selectedDate.getFullYear();
 
     const startOfYear = new Date(`${selectedYear}-01-01T00:00:00Z`);

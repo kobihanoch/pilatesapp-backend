@@ -26,7 +26,7 @@ const allowedOrigins = [
   "https://myapp.com", // Production frontend
 ];
 
-app.use(
+/*app.use(
   cors({
     origin: function (origin, callback) {
       if (!origin || allowedOrigins.includes(origin)) {
@@ -37,7 +37,8 @@ app.use(
     },
     credentials: true,
   })
-);
+);*/
+app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json());
 connectDB(); // Connect to MongoDB
 
