@@ -21,6 +21,7 @@ const allowedOrigins = [
   process.env.SHILAT_IP,
   process.env.HOME_IP,
   process.env.COMPUTER_IP,
+  process.env.PHONE_IP,
   "https://pilates-backend-wk9s.onrender.com", // Backend Render
   "https://myapp.com", // Production frontend
 ];
