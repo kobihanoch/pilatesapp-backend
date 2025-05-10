@@ -38,7 +38,12 @@ const allowedOrigins = [
     credentials: true,
   })
 );*/
-app.use(cors({ origin: "*", credentials: true }));
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+  })
+);
 app.use(express.json());
 connectDB(); // Connect to MongoDB
 
