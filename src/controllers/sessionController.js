@@ -156,6 +156,12 @@ export const registerToSession = async (req, res) => {
       return res.status(404).json({ message: "Session not found" });
     }
 
+    if (session.status === "הושלם" || session.status === "בוטל") {
+      return res.status(400).json({
+        message: "Cannot register to a completed or cancelled session",
+      });
+    }
+
     if (session.participants.includes(req.user._id)) {
       return res
         .status(400)
