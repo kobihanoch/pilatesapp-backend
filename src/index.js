@@ -6,6 +6,7 @@ import userRoutes from "./routes/userRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import sessionRoutes from "./routes/sessionRoutes.js";
 import cookieParser from "cookie-parser";
+import { errorHandler } from "./middlewares/errorHandler.js";
 
 // Config-------------------------------------------------------------------
 dotenv.config();
@@ -67,3 +68,6 @@ app.use("/api/auth", authRoutes);
 
 // Sessions
 app.use("/api/sessions", sessionRoutes);
+
+// Error Handler
+app.use(errorHandler);
