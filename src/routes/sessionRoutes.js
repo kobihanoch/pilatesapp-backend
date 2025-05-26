@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { protect, protectAdmin } from "../middlewares/authMiddleware.js";
+import { protect } from "../middlewares/authMiddleware.js";
 import {
   createSession,
   getAllSessions,
@@ -11,14 +11,15 @@ import {
   getMySessions,
   getAllSessionsForThisYearFromSelectedDate,
 } from "../controllers/sessionController.js";
+import { authorizeRoles } from "../middlewares/roleMiddleware.js";
 
 const router = Router();
 
 // Admin routes
-router.post("/create", protectAdmin, createSession); // Admin - Create a new session
-router.get("/all", protectAdmin, getAllSessions); // Admin - Get all sessions
-router.put("/update/:id", protectAdmin, updateSession); // Admin - Update a session by ID
-router.delete("/delete/:id", protectAdmin, deleteSession); // Admin - Delete a session by ID
+router.post("/create", protect, authorizeRoles("admin"), createSession); // Admin - Create a new session
+router.get("/all", protect, authorizeRoles("admin"), getAllSessions); // Admin - Get all sessions
+router.put("/update/:id", protect, authorizeRoles("admin"), updateSession); // Admin - Update a session by ID
+router.delete("/delete/:id", protect, authorizeRoles("admin"), deleteSession); // Admin - Delete a session by ID
 
 // User routes
 router.get("/my", protect, getMySessions); // User - Get all sessions the user registered to
