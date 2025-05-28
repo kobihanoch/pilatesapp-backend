@@ -1,134 +1,160 @@
-# 🧘‍♀️ PilatesApp Server-Side
+# PilatesApp Backend 🧘‍♂️💻
 
-Welcome to the **PilatesApp Server-Side**, the backend application for managing users, authentication, and Pilates group sessions. This project is part of a larger system being developed for a **real client**, a Pilates instructor, to help manage their business efficiently. The **frontend** for this project is also under active development to provide a seamless user experience.
-
----
-
-## 🌟 Features
-
-- **User Management**: Create, update, delete, and retrieve user profiles.
-- **Authentication**: Secure login, logout, and token-based authentication with JWT.
-- **Session Management**: Create, update, delete, and retrieve Pilates group sessions.
-- **Role-Based Access Control**: Separate routes and permissions for users and admins.
-- **Security Enhancements**:
-  - Middleware for route protection and role-based access.
-  - Secure handling of access and refresh tokens.
-  - Token blacklisting for secure logout.
-  - Password hashing with bcryptjs.
-- **HTTPS Security**: Deployed on **Render**, ensuring all API requests are encrypted and secure.
+A robust, scalable backend for managing Pilates sessions, users, and authentication. Built with Node.js and Express, this project is designed for production-ready deployments in real Pilates studio applications, as part of a full-stack system.
 
 ---
 
-## 📂 Project Structure
+## Table of Contents
 
-### 🔑 Key Files
-
-- **`src/index.js`**: Entry point of the application. Configures middleware, connects to the database, and sets up routes.
-- **`src/config/db.js`**: MongoDB connection configuration.
-- **`src/controllers/`**: Contains logic for handling requests for authentication, users, and sessions.
-- **`src/middlewares/authMiddleware.js`**: Middleware for protecting routes and enforcing role-based access.
-- **`src/models/`**: Mongoose schemas for users, sessions, and blacklisted tokens.
-- **`src/routes/`**: Defines API routes for authentication, users, and sessions.
-
----
-
-## 🔒 Security Features
-
-### Middleware
-
-- **`authMiddleware.js`**: Protects routes by verifying JWT tokens and enforces role-based access control (e.g., admin-only routes).
-- **Error Handling**: Ensures proper error responses for unauthorized or invalid requests.
-
-### Authentication
-
-- **Access Tokens**: Short-lived tokens used for authenticating API requests. Stored securely in HTTP-only cookies to prevent XSS attacks.
-- **Refresh Tokens**: Long-lived tokens used to generate new access tokens. Stored securely and validated during token refresh operations.
-- **Token Blacklisting**: Implements a blacklist for invalidated tokens to ensure secure logout and prevent reuse of compromised tokens.
-
-### Password Security
-
-- **Hashing**: User passwords are hashed using bcryptjs before being stored in the database, ensuring they are never stored in plain text.
-
-### HTTPS Security
-
-- **Render Deployment**: The server is deployed on **Render**, which provides HTTPS by default, ensuring all API requests are encrypted and secure.
-
-### CORS
-
-- Configured to allow secure cross-origin requests while restricting unauthorized domains.
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Installation](#installation)
+- [Running the Project](#running-the-project)
+- [API Documentation](#api-documentation)
+  - [Authentication Endpoints](#authentication-endpoints)
+  - [Session Management Endpoints](#session-management-endpoints)
+  - [User Management Endpoints](#user-management-endpoints)
+- [Frontend Application](#frontend-application)
+- [Contribution](#contribution)
+- [Responsible Use](#responsible-use)
+- [License](#license)
+- [Contact](#contact)
 
 ---
 
-## 📡 API Endpoints
+## Features ✨
 
-### 🔑 Authentication Routes (`/api/auth`)
-
-- `POST /login`: Log in a user and issue access and refresh tokens.
-- `POST /logout`: Log out a user and blacklist the refresh token.
-- `POST /refresh`: Generate a new access token using a valid refresh token.
-
-### 👤 User Routes (`/api/users`)
-
-- **Public**:
-  - `POST /create`: Register a new user.
-- **User**:
-  - `GET /get`: Get the authenticated user's profile.
-  - `PUT /update`: Update the authenticated user's profile.
-- **Admin**:
-  - `GET /all`: Get all users.
-  - `GET /:id`: Get a specific user by ID.
-  - `PUT /update/:id`: Update a specific user by ID.
-  - `DELETE /delete/:id`: Delete a specific user by ID.
-
-### 🗓️ Session Routes (`/api/sessions`)
-
-- **Admin**:
-  - `POST /create`: Create a new session.
-  - `GET /all`: Get all sessions.
-  - `PUT /update/:id`: Update a session by ID.
-  - `DELETE /delete/:id`: Delete a session by ID.
-- **User**:
-  - `GET /my`: Get all sessions the user is registered to.
-  - `GET /soon`: Get all sessions for the year by selected date.
-  - `GET /:id`: View details of a specific session.
-  - `POST /register/:id`: Register for a session.
-  - `POST /unregister/:id`: Unregister from a session.
+- User authentication and session management (JWT-based)
+- Role-based authorization (admin, user)
+- Full CRUD for users and Pilates sessions
+- Secure API endpoints with middleware protection
+- Pagination, filtering, and user-specific data access
+- Designed for integration with a real Pilates studio frontend
 
 ---
 
-## 🛠️ Technologies Used
+## Tech Stack 🛠️
 
-- **Backend**: Node.js, Express
-- **Database**: MongoDB, Mongoose
-- **Authentication**: JWT (JSON Web Tokens)
-- **Environment Variables**: dotenv
-- **Password Hashing**: bcryptjs
-- **CORS**: Configured for secure cross-origin requests
-- **Deployment**: Render (with HTTPS)
+- **Node.js**
+- **Express.js**
+- **JWT Authentication**
+- **Middleware-based security**
+- **Modular MVC structure**
 
 ---
 
-## 🌐 Deployment
+## Installation 🚀
 
-The server is deployed on **Render** and can be accessed via HTTPS. This ensures that all API requests are encrypted, providing an additional layer of security for users and administrators.
+```bash
+git clone https://github.com/kobihanoch/pilatesapp-backend.git
+cd pilatesapp-backend
+npm install
+```
+
+> **Note:** Environment variables are required for proper operation (database, JWT secrets, etc). _These details are intentionally omitted from this README for security and best practices._
 
 ---
 
-## 🖥️ Frontend
+## Running the Project 🏃
 
-A dedicated frontend for this project is under active development and will provide a modern, user-friendly interface for instructors and clients.
+```bash
+npm start
+```
 
-**Frontend repository:**  
+---
+
+## API Documentation
+
+### Authentication Endpoints 🔐
+
+| Method | Path                  | Description                    |
+| ------ | --------------------- | ------------------------------ |
+| POST   | `/api/auth/login`     | Log in a user                  |
+| POST   | `/api/auth/logout`    | Log out a user                 |
+| GET    | `/api/auth/checkauth` | Check if user is authenticated |
+| POST   | `/api/auth/refresh`   | Refresh authentication token   |
+
+---
+
+### Session Management Endpoints 🗓️
+
+#### Admin
+
+| Method | Path                       | Description                  |
+| ------ | -------------------------- | ---------------------------- |
+| POST   | `/api/sessions/create`     | Create a new session         |
+| GET    | `/api/sessions/all`        | Get all sessions (paginated) |
+| PUT    | `/api/sessions/update/:id` | Update a session by ID       |
+| DELETE | `/api/sessions/delete/:id` | Delete a session by ID       |
+
+#### User
+
+| Method | Path                           | Description                                   |
+| ------ | ------------------------------ | --------------------------------------------- |
+| GET    | `/api/sessions/my`             | Get all sessions the user is registered to    |
+| GET    | `/api/sessions/soon`           | Get all sessions for current year from a date |
+| GET    | `/api/sessions/:id`            | Get details of a specific session             |
+| POST   | `/api/sessions/register/:id`   | Register to a session                         |
+| POST   | `/api/sessions/unregister/:id` | Unregister from a session                     |
+
+---
+
+### User Management Endpoints 👤
+
+#### Public
+
+| Method | Path                | Description         |
+| ------ | ------------------- | ------------------- |
+| POST   | `/api/users/create` | Register a new user |
+
+#### User (Authenticated)
+
+| Method | Path                | Description             |
+| ------ | ------------------- | ----------------------- |
+| GET    | `/api/users/get`    | Get own user profile    |
+| PUT    | `/api/users/update` | Update own user profile |
+
+#### Admin
+
+| Method | Path                    | Description               |
+| ------ | ----------------------- | ------------------------- |
+| GET    | `/api/users/all`        | Get all users             |
+| GET    | `/api/users/:id`        | Get a specific user by ID |
+| PUT    | `/api/users/update/:id` | Update a user by ID       |
+| DELETE | `/api/users/delete/:id` | Delete a user by ID       |
+
+---
+
+## Frontend Application 🌐
+
+A modern frontend for this project is under development.  
+You can find the frontend repository here:  
 [https://github.com/kobihanoch/pilatesapp-frontend](https://github.com/kobihanoch/pilatesapp-frontend)
 
 ---
 
-## 📧 Contact
+## Contribution 🤝
 
-For any questions or issues, feel free to reach out to the project maintainer.
-
-**Email:** kobikobi622@gmail.com
+Contributions are welcome following standard GitHub pull request workflows. Please open an issue to discuss major changes before submitting a PR.
 
 ---
 
-### 🎉 Thank you for using PilatesApp Server-Side!
+## Responsible Use ⚠️
+
+> **Warning:**  
+> This code is provided for educational and development purposes only. Misuse, unauthorized deployment, or use in violation of applicable laws and regulations is strictly prohibited.  
+> **Do not share, expose, or use the code for malicious or unethical purposes.**
+
+---
+
+## License 📝
+
+This project is licensed under the MIT License. See the `LICENSE` file for details.
+
+---
+
+## Contact 📧
+
+For inquiries, suggestions, or partnership opportunities, please contact:  
+**Kobi Hanoch**  
+✉️ kobikobi622@gmail.com
