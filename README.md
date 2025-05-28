@@ -21,27 +21,6 @@ Welcome to the **PilatesApp Server-Side**, the backend application for managing 
 
 ## 📂 Project Structure
 
-```
-src/
-  index.js
-  config/
-    db.js
-  controllers/
-    authController.js
-    sessionController.js
-    userController.js
-  middlewares/
-    authMiddleware.js
-  models/
-    blacklistedTokenModel.js
-    sessionModel.js
-    userModel.js
-  routes/
-    authRoutes.js
-    sessionRoutes.js
-    userRoutes.js
-```
-
 ### 🔑 Key Files
 
 - **`src/index.js`**: Entry point of the application. Configures middleware, connects to the database, and sets up routes.
@@ -80,28 +59,6 @@ src/
 
 ---
 
-## 🚀 Installation
-
-1. Clone the repository:
-
-   ```bash
-   git clone https://github.com/your-username/pilatesapp_serverside.git
-   cd pilatesapp_serverside
-   ```
-
-2. Install dependencies:
-
-   ```bash
-   npm install
-   ```
-
-3. Start the server:
-   ```bash
-   npm start
-   ```
-
----
-
 ## 📡 API Endpoints
 
 ### 🔑 Authentication Routes (`/api/auth`)
@@ -132,6 +89,7 @@ src/
   - `DELETE /delete/:id`: Delete a session by ID.
 - **User**:
   - `GET /my`: Get all sessions the user is registered to.
+  - `GET /soon`: Get all sessions for the year by selected date.
   - `GET /:id`: View details of a specific session.
   - `POST /register/:id`: Register for a session.
   - `POST /unregister/:id`: Unregister from a session.
@@ -150,31 +108,26 @@ src/
 
 ---
 
-## 🏃 Running in Development
-
-To run the project in development mode, use the following command:
-
-```bash
-npm start
-```
-
----
-
 ## 🌐 Deployment
 
 The server is deployed on **Render** and can be accessed via HTTPS. This ensures that all API requests are encrypted, providing an additional layer of security for users and administrators.
 
 ---
 
-## 🖥️ Frontend Development
+## 🖥️ Frontend
 
-The **frontend** for this project is currently under active development. It will provide a user-friendly interface for the Pilates instructor and their clients to interact with the system. Stay tuned for updates!
+A dedicated frontend for this project is under active development and will provide a modern, user-friendly interface for instructors and clients.
+
+**Frontend repository:**  
+[https://github.com/kobihanoch/pilatesapp-frontend](https://github.com/kobihanoch/pilatesapp-frontend)
 
 ---
 
 ## 📧 Contact
 
 For any questions or issues, feel free to reach out to the project maintainer.
+
+**Email:** kobikobi622@gmail.com
 
 ---
 
