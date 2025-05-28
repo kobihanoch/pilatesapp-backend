@@ -22,15 +22,46 @@ export const getMySessions = async (req, res) => {
   res.json(sessions);
 };
 
-// @desc    Get all sessions
+// @desc    Get paginated sessions
 // @route   GET /api/sessions/all
 // @access  Private/Admin
-export const getAllSessions = async (req, res) => {
-  const sessions = await Session.find().populate(
-    "participants",
-    "username email"
-  );
-  res.json(sessions);
+export const getPaginatedSessions = async (req, res) => {
+  const page = req.query.page || 1;
+  const limit = req.query.limit || 10;
+  const search = req.query.search || "";
+  const sortField = req.query.sortField || "date";
+  const sortOrder = req.query.sortOrder === "desc" ? -1 : 1;
+  const skip = (page - 1) * limit;
+
+  if (page < 1 || limit < 1 || limit > 100) {
+    throw createError(400, "Invalid pagination parameters");
+  }
+
+  // Free text search
+  const filter = {
+    $or: [
+      { time: { $regex: search, $options: "i" } },
+      { type: { $regex: search, $options: "i" } },
+      { notes: { $regex: search, $options: "i" } },
+      { location: { $regex: search, $options: "i" } },
+    ],
+  };
+
+  const [sessions, total] = await Promise.all([
+    Session.find(filter)
+      .populate("participants", "username email")
+      .sort({ [sortField]: sortOrder })
+      .skip(skip)
+      .limit(limit),
+    Session.countDocuments(filter),
+  ]);
+
+  res.status(200).json({
+    sessions,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+  });
 };
 
 // @desc    Get a session by ID
@@ -83,7 +114,9 @@ export const registerToSession = async (req, res) => {
     throw createError(400, "Session is full");
   session.participants.push(req.user._id);
   await session.save();
-  res.status(200).json({ message: "Registered successfully" });
+  res
+    .status(200)
+    .json({ message: "Registered successfully", session: session });
 };
 
 // @desc    Unregister a user from a session

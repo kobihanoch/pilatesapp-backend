@@ -3,7 +3,7 @@ import { asyncHandler } from "../middlewares/asyncHandler.js";
 import { protect } from "../middlewares/authMiddleware.js";
 import {
   createSession,
-  getAllSessions,
+  getPaginatedSessions,
   getSessionById,
   updateSession,
   deleteSession,
@@ -27,7 +27,7 @@ router.get(
   "/all",
   protect,
   authorizeRoles("admin"),
-  asyncHandler(getAllSessions)
+  asyncHandler(getPaginatedSessions)
 ); // Admin - Get all sessions
 router.put(
   "/update/:id",
