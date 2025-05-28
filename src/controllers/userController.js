@@ -1,172 +1,89 @@
+// src/controllers/userController.js
+
 import bcrypt from "bcryptjs";
+import createError from "http-errors";
 import User from "../models/userModel.js";
 
-// Create a new user
+// @desc    Create a new user
+// @route   POST /api/users/create
+// @access  Public
 export const createUser = async (req, res) => {
-  try {
-    const { username, fullName, email, password, birthDate, gender } = req.body;
-
-    // Basic field validation
-    if (
-      !username ||
-      !fullName ||
-      !email ||
-      !password ||
-      !birthDate ||
-      !gender
-    ) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
-
-    // Email format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ message: "Invalid email format" });
-    }
-
-    // Password strength validation (at least 6 characters)
-    /*if (password.length < 6) {
-      return res
-        .status(400)
-        .json({ message: "Password must be at least 6 characters long" });
-    }*/
-
-    // Check if user already exists
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      return res.status(400).json({ message: "User already exists" });
-    }
-
-    // Hashing the password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Creating the user with hashed password
-    const user = await User.create({
-      username,
-      fullName,
-      email,
-      password: hashedPassword,
-      birthDate,
-      gender,
-      role: "user", // Always default to "user" at creation
-    });
-
-    res.status(201).json({
-      message: "User created successfully!",
-      user: {
-        _id: user._id,
-        username: user.username,
-        fullName: user.fullName,
-        email: user.email,
-        birthDate: user.birthDate,
-        gender: user.gender,
-        role: user.role,
-        createdAt: user.createdAt,
-      },
-    });
-  } catch (error) {
-    console.error("Error creating user:", error);
-    res.status(500).json({ message: "Server error" });
+  const { username, fullName, email, password, birthDate, gender } = req.body;
+  if (!username || !fullName || !email || !password || !birthDate || !gender) {
+    throw createError(400, "All fields are required");
   }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) throw createError(400, "Invalid email format");
+  if (await User.findOne({ email }))
+    throw createError(400, "User already exists");
+  const salt = await bcrypt.genSalt(10);
+  const hash = await bcrypt.hash(password, salt);
+  const user = await User.create({
+    username,
+    fullName,
+    email,
+    password: hash,
+    birthDate,
+    gender,
+    role: "user",
+  });
+  res.status(201).json({ message: "User created successfully!", user });
 };
 
-// Get all users
+// @desc    Get all users
+// @route   GET /api/users/all
+// @access  Private/Admin
 export const getAllUsers = async (req, res) => {
-  try {
-    const users = await User.find().select("-password");
-    res.json(users);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+  const users = await User.find().select("-password");
+  res.json(users);
 };
 
-// Get a user by ID
+// @desc    Get authenticated user by ID
+// @route   GET /api/users/get
+// @access  Private
 export const getAuthenticatedUserById = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).select("-password +role");
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    res.json(user);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+  const user = await User.findById(req.user.id).select("-password +role");
+  if (!user) throw createError(404, "User not found");
+  res.json(user);
 };
 
-// Get a user by ID (Admin route)
+// @desc    Get a user by ID
+// @route   GET /api/users/:id
+// @access  Private/Admin
 export const getUserById = async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id).select("-password +role");
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    res.json(user);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+  const user = await User.findById(req.params.id).select("-password +role");
+  if (!user) throw createError(404, "User not found");
+  res.json(user);
 };
 
-// Update a user by ID
+// @desc    Update a user by ID
+// @route   PUT /api/users/update/:id
+// @access  Private/Admin
 export const updateUser = async (req, res) => {
-  try {
-    const { username, fullName, email, birthDate, gender, role } = req.body;
-
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    user.username = username || user.username;
-    user.fullName = fullName || user.fullName;
-    user.email = email || user.email;
-    user.birthDate = birthDate || user.birthDate;
-    user.gender = gender || user.gender;
-    user.role = role || user.role;
-
-    const updatedUser = await user.save();
-
-    res.json(updatedUser);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+  const user = await User.findById(req.params.id);
+  if (!user) throw createError(404, "User not found");
+  Object.assign(user, req.body);
+  const updated = await user.save();
+  res.json(updated);
 };
 
-// Update authenticated user by ID
+// @desc    Update authenticated user
+// @route   PUT /api/users/update
+// @access  Private
 export const updateAuthenticatedUser = async (req, res) => {
-  try {
-    const { username, fullName, email, birthDate, gender } = req.body;
-
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    user.username = username || user.username;
-    user.fullName = fullName || user.fullName;
-    user.email = email || user.email;
-    user.birthDate = birthDate || user.birthDate;
-    user.gender = gender || user.gender;
-
-    const updatedUser = await user.save();
-
-    res.json(updatedUser);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+  const user = await User.findById(req.user.id);
+  if (!user) throw createError(404, "User not found");
+  Object.assign(user, req.body);
+  const updated = await user.save();
+  res.json(updated);
 };
 
-// Delete a user by ID
+// @desc    Delete a user by ID
+// @route   DELETE /api/users/delete/:id
+// @access  Private/Admin
 export const deleteUser = async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    await user.deleteOne();
-    res.json({ message: "User deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+  const user = await User.findById(req.params.id);
+  if (!user) throw createError(404, "User not found");
+  await user.deleteOne();
+  res.json({ message: "User deleted successfully" });
 };
