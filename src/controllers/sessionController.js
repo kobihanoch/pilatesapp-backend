@@ -114,7 +114,9 @@ export const registerToSession = async (req, res) => {
     throw createError(400, "Session is full");
   session.participants.push(req.user._id);
   await session.save();
-  res.status(200).json({ message: "Registered successfully" });
+  res
+    .status(200)
+    .json({ message: "Registered successfully", session: session });
 };
 
 // @desc    Unregister a user from a session
