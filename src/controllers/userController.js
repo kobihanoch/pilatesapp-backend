@@ -34,8 +34,43 @@ export const createUser = async (req, res) => {
 // @route   GET /api/users/all
 // @access  Private/Admin
 export const getAllUsers = async (req, res) => {
-  const users = await User.find().select("-password");
-  res.json(users);
+  const page = req.query.page || 1;
+  const limit = req.query.limit || 10;
+  const search = req.query.search || "";
+  const sortField = req.query.sortField || "username";
+  const sortOrder = req.query.sortOrder === "desc" ? -1 : 1;
+  const skip = (page - 1) * limit;
+
+  if (page < 1 || limit < 1 || limit > 100) {
+    throw createError(400, "Invalid pagination parameters");
+  }
+
+  // Free text search
+  const filter = {
+    $or: [
+      { username: { $regex: search, $options: "i" } },
+      { fullName: { $regex: search, $options: "i" } },
+      { email: { $regex: search, $options: "i" } },
+      { gender: { $regex: search, $options: "i" } },
+      { role: { $regex: search, $options: "i" } },
+    ],
+  };
+
+  const [users, total] = await Promise.all([
+    User.find(filter)
+      .select("-password +role")
+      .sort({ [sortField]: sortOrder })
+      .skip(skip)
+      .limit(limit),
+    User.countDocuments(filter),
+  ]);
+
+  res.status(200).json({
+    users,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+  });
 };
 
 // @desc    Get authenticated user by ID
