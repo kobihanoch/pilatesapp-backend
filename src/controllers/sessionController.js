@@ -49,7 +49,7 @@ export const getPaginatedSessions = async (req, res) => {
 
   const [sessions, total] = await Promise.all([
     Session.find(filter)
-      .populate("participants", "username email fullName")
+      .populate("participants", "id username email fullName")
       .sort({ [sortField]: sortOrder })
       .skip(skip)
       .limit(limit),
@@ -98,9 +98,10 @@ export const deleteSession = async (req, res) => {
 };
 
 // @desc    Register a user to a session
-// @route   POST /api/sessions/register/:id
+// @route   POST /api/sessions/register/:sessionId/:userId
 // @access  Private
 export const registerToSession = async (req, res) => {
+  console.log("Registering user to session:", req.params.id);
   const session = await Session.findById(req.params.id);
   if (!session) throw createError(404, "Session not found");
   if (["הושלם", "בוטל"].includes(session.status))

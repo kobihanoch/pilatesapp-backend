@@ -43,13 +43,13 @@ router.delete(
   asyncHandler(deleteSession)
 ); // Admin - Delete a session by ID
 router.post(
-  "register/:sessionId/:userId",
+  "/register/:sessionId/:userId",
   protect,
   authorizeRoles("admin"),
   asyncHandler(registerUserToSession)
 ); // Admin - Register a user to a session
 router.post(
-  "unregister/:sessionId/:userId",
+  "/unregister/:sessionId/:userId",
   protect,
   authorizeRoles("admin"),
   asyncHandler(unregisterFromSession)
