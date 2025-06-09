@@ -49,7 +49,7 @@ export const getPaginatedSessions = async (req, res) => {
 
   const [sessions, total] = await Promise.all([
     Session.find(filter)
-      .populate("participants", "username email")
+      .populate("participants", "username email fullName")
       .sort({ [sortField]: sortOrder })
       .skip(skip)
       .limit(limit),
