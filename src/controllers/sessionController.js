@@ -145,3 +145,40 @@ export const getAllSessionsForThisYearFromSelectedDate = async (req, res) => {
   }).populate("participants", "username email");
   res.json(sessions);
 };
+
+// @desc    Register a user to a session
+// @route   GET /api/sessions/register/:sessionId/:userId
+// @access  Private/Admin
+export const registerUserToSession = async (req, res) => {
+  const { sessionId, userId } = req.params;
+  const session = await Session.findById(sessionId);
+  if (!session) throw createError(404, "Session not found");
+  if (["הושלם", "בוטל"].includes(session.status))
+    throw createError(
+      400,
+      "Cannot register to a completed or cancelled session"
+    );
+  if (session.participants.includes(userId))
+    throw createError(400, "User already registered to this session");
+  if (session.participants.length >= session.maxParticipants)
+    throw createError(400, "Session is full");
+  session.participants.push(userId);
+  await session.save();
+  res
+    .status(200)
+    .json({ message: "User registered successfully", session: session });
+};
+
+// @desc    Unregister a user from a session
+// @route   GET /api/sessions/unregister/:sessionId/:userId
+// @access  Private/Admin
+export const unregisterUserFromSession = async (req, res) => {
+  const { sessionId, userId } = req.params;
+  const session = await Session.findById(sessionId);
+  if (!session) throw createError(404, "Session not found");
+  session.participants = session.participants.filter(
+    (id) => id.toString() !== userId.toString()
+  );
+  await session.save();
+  res.status(200).json({ message: "User unregistered successfully" });
+};

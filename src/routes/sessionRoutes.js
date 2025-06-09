@@ -11,6 +11,7 @@ import {
   unregisterFromSession,
   getMySessions,
   getAllSessionsForThisYearFromSelectedDate,
+  registerUserToSession,
 } from "../controllers/sessionController.js";
 import { authorizeRoles } from "../middlewares/roleMiddleware.js";
 
@@ -41,6 +42,18 @@ router.delete(
   authorizeRoles("admin"),
   asyncHandler(deleteSession)
 ); // Admin - Delete a session by ID
+router.post(
+  "register/:sessionId/:userId",
+  protect,
+  authorizeRoles("admin"),
+  asyncHandler(registerUserToSession)
+); // Admin - Register a user to a session
+router.post(
+  "unregister/:sessionId/:userId",
+  protect,
+  authorizeRoles("admin"),
+  asyncHandler(unregisterFromSession)
+); // Admin - Unregister a user from a session
 
 // User routes
 router.get("/my", protect, asyncHandler(getMySessions)); // User - Get all sessions the user registered to
