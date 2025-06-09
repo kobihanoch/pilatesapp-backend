@@ -176,6 +176,13 @@ export const unregisterUserFromSession = async (req, res) => {
   const { sessionId, userId } = req.params;
   const session = await Session.findById(sessionId);
   if (!session) throw createError(404, "Session not found");
+  if (!session.participants.includes(userId))
+    throw createError(400, "User is not registered to this session");
+  if (["הושלם", "בוטל"].includes(session.status))
+    throw createError(
+      400,
+      "Cannot unregister from a completed or cancelled session"
+    );
   session.participants = session.participants.filter(
     (id) => id.toString() !== userId.toString()
   );
