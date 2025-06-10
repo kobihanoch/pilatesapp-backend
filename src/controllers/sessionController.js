@@ -2,6 +2,7 @@
 
 import createError from "http-errors";
 import Session from "../models/sessionModel.js";
+import mongoose from "mongoose";
 
 // @desc    Create a new session
 // @route   POST /api/sessions/create
@@ -97,6 +98,19 @@ export const deleteSession = async (req, res) => {
   res.json({ message: "Session deleted successfully" });
 };
 
+// @desc    Cancel a session by ID
+// @route   PUT /api/sessions/cancel/:id
+// @access  Private/Admin
+export const cancelSession = async (req, res) => {
+  const session = await Session.findById(req.params.id);
+  if (!session) throw createError(404, "Session not found");
+  if (session.status === "בוטל")
+    throw createError(400, "Session already cancelled");
+  session.status = "בוטל";
+  await session.save();
+  res.status(200).json({ message: "Session cancelled successfully", session });
+};
+
 // @desc    Register a user to a session
 // @route   POST /api/sessions/register/:sessionId/:userId
 // @access  Private
@@ -175,18 +189,32 @@ export const registerUserToSession = async (req, res) => {
 // @access  Private/Admin
 export const unregisterUserFromSession = async (req, res) => {
   const { sessionId, userId } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw createError(400, "Invalid user ID");
+  }
+
   const session = await Session.findById(sessionId);
   if (!session) throw createError(404, "Session not found");
-  if (!session.participants.includes(userId))
-    throw createError(400, "User is not registered to this session");
-  if (["הושלם", "בוטל"].includes(session.status))
+
+  if (["הושלם", "בוטל"].includes(session.status)) {
     throw createError(
       400,
       "Cannot unregister from a completed or cancelled session"
     );
-  session.participants = session.participants.filter(
-    (id) => id.toString() !== userId.toString()
+  }
+
+  const userObjectId = new mongoose.Types.ObjectId(userId);
+
+  const isRegistered = session.participants.some((id) =>
+    id.equals(userObjectId)
   );
+  if (!isRegistered) {
+    throw createError(400, "User is not registered to this session");
+  }
+
+  session.participants.pull(userObjectId);
   await session.save();
+
   res.status(200).json({ message: "User unregistered successfully" });
 };
