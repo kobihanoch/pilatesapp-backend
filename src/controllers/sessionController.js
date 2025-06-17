@@ -95,8 +95,19 @@ export const updateSession = async (req, res) => {
   }
 
   Object.assign(session, req.body);
-  const updated = await session.save();
-  res.json(updated);
+  await session.save();
+  const updated = await Session.findById(req.params.id)
+    .populate("participants", "fullName username email")
+    .exec();
+
+  res.status(200).json({
+    message: "Session updated successfully",
+    session: updated,
+  });
+
+  res
+    .status(200)
+    .json({ message: "Session updated successfully", session: updated });
 };
 
 // @desc    Delete a session by ID
@@ -119,7 +130,9 @@ export const cancelSession = async (req, res) => {
     throw createError(400, "Session already cancelled");
   session.status = "בוטל";
   await session.save();
-  res.status(200).json({ message: "Session cancelled successfully", session });
+  res
+    .status(200)
+    .json({ message: "Session cancelled successfully", session: session });
 };
 
 // @desc    Register a user to a session
@@ -177,8 +190,7 @@ export const getAllSessionsForThisYearFromSelectedDate = async (req, res) => {
 // @access  Private/Admin
 export const registerUserToSession = async (req, res) => {
   const { sessionId, username } = req.params;
-  console.log("Registering user to session:", sessionId, username);
-  const userId = await User.findOne({ username }).select("_id");
+  const userId = (await User.findOne({ username }).select("_id"))?._id;
   if (!userId) throw createError(404, "User not found");
   const session = await Session.findById(sessionId);
   if (!session) throw createError(404, "Session not found");
@@ -187,12 +199,15 @@ export const registerUserToSession = async (req, res) => {
       400,
       "Cannot register to a completed or cancelled session"
     );
-  if (session.participants.includes(userId))
+  if (session.participants.includes(userId)) {
     throw createError(400, "User already registered to this session");
+  }
   if (session.participants.length >= session.maxParticipants)
     throw createError(400, "Session is full");
   session.participants.push(userId);
   await session.save();
+  await session.populate("participants", "fullName username email");
+
   res
     .status(200)
     .json({ message: "User registered successfully", session: session });
@@ -229,6 +244,9 @@ export const unregisterUserFromSession = async (req, res) => {
 
   session.participants.pull(userObjectId);
   await session.save();
+  await session.populate("participants", "fullName username email");
 
-  res.status(200).json({ message: "User unregistered successfully" });
+  res
+    .status(200)
+    .json({ message: "User unregistered successfully", session: session });
 };
