@@ -3,6 +3,7 @@
 import createError from "http-errors";
 import Session from "../models/sessionModel.js";
 import mongoose from "mongoose";
+import User from "../models/userModel.js";
 
 // @desc    Create a new session
 // @route   POST /api/sessions/create
@@ -83,6 +84,16 @@ export const getSessionById = async (req, res) => {
 export const updateSession = async (req, res) => {
   const session = await Session.findById(req.params.id);
   if (!session) throw createError(404, "Session not found");
+  if (session.status === "בוטל" || session.status === "הושלם") {
+    throw createError(400, "Cannot update a cancelled or completed session");
+  }
+  if (req.body.duration !== undefined) {
+    req.body.duration = Number(req.body.duration);
+  }
+  if (req.body.maxParticipants !== undefined) {
+    req.body.maxParticipants = Number(req.body.maxParticipants);
+  }
+
   Object.assign(session, req.body);
   const updated = await session.save();
   res.json(updated);
@@ -162,10 +173,13 @@ export const getAllSessionsForThisYearFromSelectedDate = async (req, res) => {
 };
 
 // @desc    Register a user to a session
-// @route   GET /api/sessions/register/:sessionId/:userId
+// @route   GET /api/sessions/register/:sessionId/:username
 // @access  Private/Admin
 export const registerUserToSession = async (req, res) => {
-  const { sessionId, userId } = req.params;
+  const { sessionId, username } = req.params;
+  console.log("Registering user to session:", sessionId, username);
+  const userId = await User.findOne({ username }).select("_id");
+  if (!userId) throw createError(404, "User not found");
   const session = await Session.findById(sessionId);
   if (!session) throw createError(404, "Session not found");
   if (["הושלם", "בוטל"].includes(session.status))
@@ -185,7 +199,7 @@ export const registerUserToSession = async (req, res) => {
 };
 
 // @desc    Unregister a user from a session
-// @route   GET /api/sessions/unregister/:sessionId/:userId
+// @route   POST /api/sessions/unregister/:sessionId/:userId
 // @access  Private/Admin
 export const unregisterUserFromSession = async (req, res) => {
   const { sessionId, userId } = req.params;
