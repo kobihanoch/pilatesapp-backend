@@ -9,6 +9,41 @@ import User from "../models/userModel.js";
 // @route   POST /api/sessions/create
 // @access  Private/Admin
 export const createSession = async (req, res) => {
+  console.log("Creating session with data:", req.body);
+  if (
+    !req.body.date ||
+    !req.body.time ||
+    !req.body.type ||
+    !req.body.duration ||
+    !req.body.location ||
+    !req.body.maxParticipants
+  ) {
+    throw createError(400, "All fields are required");
+  }
+  if (req.body.maxParticipants <= 0) {
+    throw createError(400, "Max participants must be greater than 0");
+  }
+  if (req.body.duration <= 0) {
+    throw createError(400, "Duration must be greater than 0");
+  }
+  if (
+    req.body.status &&
+    !["מתוכנן", "בוטל", "הושלם"].includes(req.body.status)
+  ) {
+    throw createError(400, "Invalid status");
+  }
+
+  const selectedDateStr = new Date(req.body.date).toLocaleDateString("en-CA", {
+    timeZone: "Asia/Jerusalem",
+  });
+  const todayJerusalemStr = new Date().toLocaleDateString("en-CA", {
+    timeZone: "Asia/Jerusalem",
+  });
+
+  if (selectedDateStr < todayJerusalemStr) {
+    throw createError(400, "Cannot create a session in the past");
+  }
+
   const session = await Session.create(req.body);
   res.status(201).json(session);
 };
@@ -43,6 +78,7 @@ export const getPaginatedSessions = async (req, res) => {
   const filter = {
     $or: [
       { time: { $regex: search, $options: "i" } },
+      { status: { $regex: search, $options: "i" } },
       { type: { $regex: search, $options: "i" } },
       { notes: { $regex: search, $options: "i" } },
       { location: { $regex: search, $options: "i" } },
