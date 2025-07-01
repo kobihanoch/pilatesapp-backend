@@ -34,8 +34,43 @@ export const createUser = async (req, res) => {
 // @route   GET /api/users/all
 // @access  Private/Admin
 export const getAllUsers = async (req, res) => {
-  const users = await User.find().select("-password");
-  res.json(users);
+  const page = req.query.page || 1;
+  const limit = req.query.limit || 10;
+  const search = req.query.search || "";
+  const sortField = req.query.sortField || "username";
+  const sortOrder = req.query.sortOrder === "desc" ? -1 : 1;
+  const skip = (page - 1) * limit;
+
+  if (page < 1 || limit < 1 || limit > 100) {
+    throw createError(400, "Invalid pagination parameters");
+  }
+
+  // Free text search
+  const filter = {
+    $or: [
+      { username: { $regex: search, $options: "i" } },
+      { fullName: { $regex: search, $options: "i" } },
+      { email: { $regex: search, $options: "i" } },
+      { gender: { $regex: search, $options: "i" } },
+      { role: { $regex: search, $options: "i" } },
+    ],
+  };
+
+  const [users, total] = await Promise.all([
+    User.find(filter)
+      .select("-password +role")
+      .sort({ [sortField]: sortOrder })
+      .skip(skip)
+      .limit(limit),
+    User.countDocuments(filter),
+  ]);
+
+  res.status(200).json({
+    users,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+  });
 };
 
 // @desc    Get authenticated user by ID
@@ -60,11 +95,42 @@ export const getUserById = async (req, res) => {
 // @route   PUT /api/users/update/:id
 // @access  Private/Admin
 export const updateUser = async (req, res) => {
-  const user = await User.findById(req.params.id);
+  /* ---------- ❶ locate user ---------- */
+  const user = await User.findById(req.params.id).select("+role"); // role is normally hidden
   if (!user) throw createError(404, "User not found");
+
+  /* ---------- ❷ sanitise payload ---------- */
+  // Never allow password changes through this endpoint
+  if ("password" in req.body) delete req.body.password;
+
+  // Normalise e-mail & username casing/spacing
+  if (req.body.email) req.body.email = req.body.email.toLowerCase().trim();
+  if (req.body.username) req.body.username = req.body.username.trim();
+
+  // Convert birthDate if a string (HTML `<input type="date">` comes as “YYYY-MM-DD”)
+  if (req.body.birthDate !== undefined) {
+    req.body.birthDate = new Date(req.body.birthDate);
+  }
+
+  // Ensure role & gender values are legal (optional but nice-to-have)
+  const allowedRoles = ["user", "admin"];
+  const allowedGenders = ["male", "female", "other"];
+  if (req.body.role && !allowedRoles.includes(req.body.role))
+    throw createError(400, "Invalid role value");
+  if (req.body.gender && !allowedGenders.includes(req.body.gender))
+    throw createError(400, "Invalid gender value");
+
+  /* ---------- ❸ apply & persist ---------- */
   Object.assign(user, req.body);
-  const updated = await user.save();
-  res.json(updated);
+  await user.save();
+
+  // Re-fetch WITHOUT the password field and send back to client
+  const updated = await User.findById(user._id).select("-password +role");
+
+  res.status(200).json({
+    message: "User updated successfully",
+    user: updated,
+  });
 };
 
 // @desc    Update authenticated user
