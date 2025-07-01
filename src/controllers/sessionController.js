@@ -2,11 +2,48 @@
 
 import createError from "http-errors";
 import Session from "../models/sessionModel.js";
+import mongoose from "mongoose";
+import User from "../models/userModel.js";
 
 // @desc    Create a new session
 // @route   POST /api/sessions/create
 // @access  Private/Admin
 export const createSession = async (req, res) => {
+  console.log("Creating session with data:", req.body);
+  if (
+    !req.body.date ||
+    !req.body.time ||
+    !req.body.type ||
+    !req.body.duration ||
+    !req.body.location ||
+    !req.body.maxParticipants
+  ) {
+    throw createError(400, "All fields are required");
+  }
+  if (req.body.maxParticipants <= 0) {
+    throw createError(400, "Max participants must be greater than 0");
+  }
+  if (req.body.duration <= 0) {
+    throw createError(400, "Duration must be greater than 0");
+  }
+  if (
+    req.body.status &&
+    !["מתוכנן", "בוטל", "הושלם"].includes(req.body.status)
+  ) {
+    throw createError(400, "Invalid status");
+  }
+
+  const selectedDateStr = new Date(req.body.date).toLocaleDateString("en-CA", {
+    timeZone: "Asia/Jerusalem",
+  });
+  const todayJerusalemStr = new Date().toLocaleDateString("en-CA", {
+    timeZone: "Asia/Jerusalem",
+  });
+
+  if (selectedDateStr < todayJerusalemStr) {
+    throw createError(400, "Cannot create a session in the past");
+  }
+
   const session = await Session.create(req.body);
   res.status(201).json(session);
 };
@@ -41,6 +78,7 @@ export const getPaginatedSessions = async (req, res) => {
   const filter = {
     $or: [
       { time: { $regex: search, $options: "i" } },
+      { status: { $regex: search, $options: "i" } },
       { type: { $regex: search, $options: "i" } },
       { notes: { $regex: search, $options: "i" } },
       { location: { $regex: search, $options: "i" } },
@@ -49,7 +87,7 @@ export const getPaginatedSessions = async (req, res) => {
 
   const [sessions, total] = await Promise.all([
     Session.find(filter)
-      .populate("participants", "username email fullName")
+      .populate("participants", "id username email fullName")
       .sort({ [sortField]: sortOrder })
       .skip(skip)
       .limit(limit),
@@ -82,9 +120,30 @@ export const getSessionById = async (req, res) => {
 export const updateSession = async (req, res) => {
   const session = await Session.findById(req.params.id);
   if (!session) throw createError(404, "Session not found");
+  if (session.status === "בוטל" || session.status === "הושלם") {
+    throw createError(400, "Cannot update a cancelled or completed session");
+  }
+  if (req.body.duration !== undefined) {
+    req.body.duration = Number(req.body.duration);
+  }
+  if (req.body.maxParticipants !== undefined) {
+    req.body.maxParticipants = Number(req.body.maxParticipants);
+  }
+
   Object.assign(session, req.body);
-  const updated = await session.save();
-  res.json(updated);
+  await session.save();
+  const updated = await Session.findById(req.params.id)
+    .populate("participants", "fullName username email")
+    .exec();
+
+  res.status(200).json({
+    message: "Session updated successfully",
+    session: updated,
+  });
+
+  res
+    .status(200)
+    .json({ message: "Session updated successfully", session: updated });
 };
 
 // @desc    Delete a session by ID
@@ -97,10 +156,26 @@ export const deleteSession = async (req, res) => {
   res.json({ message: "Session deleted successfully" });
 };
 
+// @desc    Cancel a session by ID
+// @route   PUT /api/sessions/cancel/:id
+// @access  Private/Admin
+export const cancelSession = async (req, res) => {
+  const session = await Session.findById(req.params.id);
+  if (!session) throw createError(404, "Session not found");
+  if (session.status === "בוטל")
+    throw createError(400, "Session already cancelled");
+  session.status = "בוטל";
+  await session.save();
+  res
+    .status(200)
+    .json({ message: "Session cancelled successfully", session: session });
+};
+
 // @desc    Register a user to a session
-// @route   POST /api/sessions/register/:id
+// @route   POST /api/sessions/register/:sessionId/:userId
 // @access  Private
 export const registerToSession = async (req, res) => {
+  console.log("Registering user to session:", req.params.id);
   const session = await Session.findById(req.params.id);
   if (!session) throw createError(404, "Session not found");
   if (["הושלם", "בוטל"].includes(session.status))
@@ -144,4 +219,70 @@ export const getAllSessionsForThisYearFromSelectedDate = async (req, res) => {
     date: { $gte: start, $lt: end },
   }).populate("participants", "username email");
   res.json(sessions);
+};
+
+// @desc    Register a user to a session
+// @route   GET /api/sessions/register/:sessionId/:username
+// @access  Private/Admin
+export const registerUserToSession = async (req, res) => {
+  const { sessionId, username } = req.params;
+  const userId = (await User.findOne({ username }).select("_id"))?._id;
+  if (!userId) throw createError(404, "User not found");
+  const session = await Session.findById(sessionId);
+  if (!session) throw createError(404, "Session not found");
+  if (["הושלם", "בוטל"].includes(session.status))
+    throw createError(
+      400,
+      "Cannot register to a completed or cancelled session"
+    );
+  if (session.participants.includes(userId)) {
+    throw createError(400, "User already registered to this session");
+  }
+  if (session.participants.length >= session.maxParticipants)
+    throw createError(400, "Session is full");
+  session.participants.push(userId);
+  await session.save();
+  await session.populate("participants", "fullName username email");
+
+  res
+    .status(200)
+    .json({ message: "User registered successfully", session: session });
+};
+
+// @desc    Unregister a user from a session
+// @route   POST /api/sessions/unregister/:sessionId/:userId
+// @access  Private/Admin
+export const unregisterUserFromSession = async (req, res) => {
+  const { sessionId, userId } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw createError(400, "Invalid user ID");
+  }
+
+  const session = await Session.findById(sessionId);
+  if (!session) throw createError(404, "Session not found");
+
+  if (["הושלם", "בוטל"].includes(session.status)) {
+    throw createError(
+      400,
+      "Cannot unregister from a completed or cancelled session"
+    );
+  }
+
+  const userObjectId = new mongoose.Types.ObjectId(userId);
+
+  const isRegistered = session.participants.some((id) =>
+    id.equals(userObjectId)
+  );
+  if (!isRegistered) {
+    throw createError(400, "User is not registered to this session");
+  }
+
+  session.participants.pull(userObjectId);
+  await session.save();
+  await session.populate("participants", "fullName username email");
+
+  res
+    .status(200)
+    .json({ message: "User unregistered successfully", session: session });
 };

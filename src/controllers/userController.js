@@ -95,11 +95,42 @@ export const getUserById = async (req, res) => {
 // @route   PUT /api/users/update/:id
 // @access  Private/Admin
 export const updateUser = async (req, res) => {
-  const user = await User.findById(req.params.id);
+  /* ---------- ❶ locate user ---------- */
+  const user = await User.findById(req.params.id).select("+role"); // role is normally hidden
   if (!user) throw createError(404, "User not found");
+
+  /* ---------- ❷ sanitise payload ---------- */
+  // Never allow password changes through this endpoint
+  if ("password" in req.body) delete req.body.password;
+
+  // Normalise e-mail & username casing/spacing
+  if (req.body.email) req.body.email = req.body.email.toLowerCase().trim();
+  if (req.body.username) req.body.username = req.body.username.trim();
+
+  // Convert birthDate if a string (HTML `<input type="date">` comes as “YYYY-MM-DD”)
+  if (req.body.birthDate !== undefined) {
+    req.body.birthDate = new Date(req.body.birthDate);
+  }
+
+  // Ensure role & gender values are legal (optional but nice-to-have)
+  const allowedRoles = ["user", "admin"];
+  const allowedGenders = ["male", "female", "other"];
+  if (req.body.role && !allowedRoles.includes(req.body.role))
+    throw createError(400, "Invalid role value");
+  if (req.body.gender && !allowedGenders.includes(req.body.gender))
+    throw createError(400, "Invalid gender value");
+
+  /* ---------- ❸ apply & persist ---------- */
   Object.assign(user, req.body);
-  const updated = await user.save();
-  res.json(updated);
+  await user.save();
+
+  // Re-fetch WITHOUT the password field and send back to client
+  const updated = await User.findById(user._id).select("-password +role");
+
+  res.status(200).json({
+    message: "User updated successfully",
+    user: updated,
+  });
 };
 
 // @desc    Update authenticated user
