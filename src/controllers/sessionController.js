@@ -48,14 +48,43 @@ export const createSession = async (req, res) => {
   res.status(201).json(session);
 };
 
-// @desc    Get all sessions the user is registered to
-// @route   GET /api/sessions/my
+// @desc    Get all upcoming sessions for user
+// @route   GET /api/sessions/myupcoming
 // @access  Private
-export const getMySessions = async (req, res) => {
-  const sessions = await Session.find({ participants: req.user._id }).populate(
+export const getMyUpcomingSessions = async (req, res) => {
+  let sessions = await Session.find({ participants: req.user._id }).populate(
     "participants",
     "username email fullName"
   );
+
+  sessions = sessions
+    .filter((s) => s.status === "מתוכנן")
+    .sort((a, b) => {
+      const aDateTime = new Date(`${a.date}T${a.time}`);
+      const bDateTime = new Date(`${b.date}T${b.time}`);
+      return aDateTime - bDateTime;
+    });
+
+  res.json(sessions);
+};
+
+// @desc    Get all sessions the user is registered to
+// @route   GET /api/sessions/mycompleted
+// @access  Private
+export const getMyCompletedSessions = async (req, res) => {
+  let sessions = await Session.find({ participants: req.user._id }).populate(
+    "participants",
+    "username email fullName"
+  );
+
+  sessions = sessions
+    .filter((s) => s.status === "הושלם")
+    .sort((a, b) => {
+      const aDateTime = new Date(`${a.date}T${a.time}`);
+      const bDateTime = new Date(`${b.date}T${b.time}`);
+      return aDateTime - bDateTime;
+    });
+
   res.json(sessions);
 };
 

@@ -1,20 +1,21 @@
 import { Router } from "express";
-import { asyncHandler } from "../middlewares/asyncHandler.js";
-import { protect } from "../middlewares/authMiddleware.js";
 import {
+  cancelSession,
   createSession,
+  deleteSession,
+  getAllSessionsForThisYearFromSelectedDate,
+  getMyCompletedSessions,
+  getMyUpcomingSessions,
   getPaginatedSessions,
   getSessionById,
-  updateSession,
-  deleteSession,
   registerToSession,
-  unregisterFromSession,
-  getMySessions,
-  getAllSessionsForThisYearFromSelectedDate,
   registerUserToSession,
+  unregisterFromSession,
   unregisterUserFromSession,
-  cancelSession,
+  updateSession,
 } from "../controllers/sessionController.js";
+import { asyncHandler } from "../middlewares/asyncHandler.js";
+import { protect } from "../middlewares/authMiddleware.js";
 import { authorizeRoles } from "../middlewares/roleMiddleware.js";
 
 const router = Router();
@@ -64,7 +65,8 @@ router.put(
 ); // Admin - Cancel a session by ID
 
 // User routes
-router.get("/my", protect, asyncHandler(getMySessions)); // User - Get all sessions the user registered to
+router.get("/myupcoming", protect, asyncHandler(getMyUpcomingSessions)); // User - Get all sessions the user registered to UPCOMING
+router.get("/mycompleted", protect, asyncHandler(getMyCompletedSessions)); // User - Get all sessions the completed
 router.get(
   "/soon",
   protect,
