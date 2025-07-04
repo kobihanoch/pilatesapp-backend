@@ -4,6 +4,8 @@ import createError from "http-errors";
 import Session from "../models/sessionModel.js";
 import mongoose from "mongoose";
 import User from "../models/userModel.js";
+import { sendMail } from "../utils/mailer.js";
+import { generateCancelledEmail } from "../utils/emailTamplates/sessionCancelled.js";
 
 // @desc    Create a new session
 // @route   POST /api/sessions/create
@@ -165,14 +167,22 @@ export const updateSession = async (req, res) => {
     .populate("participants", "fullName username email")
     .exec();
 
+  // Send an email for canclelation
+  for (const user of updated.participants) {
+    const userMail = user.email;
+    const html = generateCancelledEmail({ fullName: user.fullName, session });
+    console.log("Sending email to ", userMail);
+    await sendMail({
+      to: userMail,
+      subject: "ביטול אימון",
+      html,
+    });
+  }
+
   res.status(200).json({
     message: "Session updated successfully",
     session: updated,
   });
-
-  res
-    .status(200)
-    .json({ message: "Session updated successfully", session: updated });
 };
 
 // @desc    Delete a session by ID
