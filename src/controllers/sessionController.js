@@ -62,8 +62,18 @@ export const getMyUpcomingSessions = async (req, res) => {
   sessions = sessions
     .filter((s) => s.status === "מתוכנן")
     .sort((a, b) => {
-      const aDateTime = new Date(`${a.date}T${a.time}`);
-      const bDateTime = new Date(`${b.date}T${b.time}`);
+      const aDateTime = new Date(a.date);
+      aDateTime.setHours(
+        Number(a.time.split(":")[0]),
+        Number(a.time.split(":")[1])
+      );
+      const bDateTime = new Date(b.date);
+      bDateTime.setHours(
+        Number(b.time.split(":")[0]),
+        Number(b.time.split(":")[1])
+      );
+      console.log(aDateTime);
+      console.log(bDateTime);
       return aDateTime - bDateTime;
     });
 
@@ -82,8 +92,18 @@ export const getMyCompletedSessions = async (req, res) => {
   sessions = sessions
     .filter((s) => s.status === "הושלם")
     .sort((a, b) => {
-      const aDateTime = new Date(`${a.date}T${a.time}`);
-      const bDateTime = new Date(`${b.date}T${b.time}`);
+      const aDateTime = new Date(a.date);
+      aDateTime.setHours(
+        Number(a.time.split(":")[0]),
+        Number(a.time.split(":")[1])
+      );
+      const bDateTime = new Date(b.date);
+      bDateTime.setHours(
+        Number(b.time.split(":")[0]),
+        Number(b.time.split(":")[1])
+      );
+      console.log(aDateTime);
+      console.log(bDateTime);
       return aDateTime - bDateTime;
     });
 
