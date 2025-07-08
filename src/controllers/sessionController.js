@@ -7,6 +7,7 @@ import User from "../models/userModel.js";
 import { sendMail } from "../utils/mailer.js";
 import { generateCancelledEmail } from "../utils/emailTamplates/sessionCancelled.js";
 import { generateUpdatedSessionEmail } from "../utils/emailTamplates/sessionUpdated.js";
+import { notifyParticipantsWhenSessionUpdates } from "../services/emailService.js";
 
 // @desc    Create a new session
 // @route   POST /api/sessions/create
@@ -73,8 +74,6 @@ export const getMyUpcomingSessions = async (req, res) => {
         Number(b.time.split(":")[0]),
         Number(b.time.split(":")[1])
       );
-      console.log(aDateTime);
-      console.log(bDateTime);
       return aDateTime - bDateTime;
     });
 
@@ -103,8 +102,6 @@ export const getMyCompletedSessions = async (req, res) => {
         Number(b.time.split(":")[0]),
         Number(b.time.split(":")[1])
       );
-      console.log(aDateTime);
-      console.log(bDateTime);
       return aDateTime - bDateTime;
     });
 
@@ -192,50 +189,8 @@ export const updateSession = async (req, res) => {
     .populate("participants", "fullName username email")
     .exec();
 
-  // Check if only max participants changed
-  const onlyMaxParticipantsChanged =
-    updated.type === oldSession.type &&
-    updated.date.getTime() === new Date(oldSession.date).getTime() &&
-    updated.time === oldSession.time &&
-    updated.location === oldSession.location;
-
-  // Send emails with updates
-  if (updated.status === "בוטל") {
-    // Send an email for canclelation
-    await Promise.all(
-      updated.participants.map((user) => {
-        const userMail = user.email;
-        const html = generateCancelledEmail({
-          fullName: user.fullName,
-          session,
-        });
-        console.log("Sending email to ", userMail);
-        return sendMail({
-          to: userMail,
-          subject: "ביטול אימון",
-          html,
-        });
-      })
-    );
-  } else if (!onlyMaxParticipantsChanged) {
-    // Send an email for update
-    await Promise.all(
-      updated.participants.map((user) => {
-        const userMail = user.email;
-        const html = generateUpdatedSessionEmail({
-          fullName: user.fullName,
-          session: oldSession,
-          updatedSession: updated,
-        });
-        console.log("Sending email to ", userMail);
-        return sendMail({
-          to: userMail,
-          subject: "שינוי באימון",
-          html,
-        });
-      })
-    );
-  }
+  // Sending an email
+  notifyParticipantsWhenSessionUpdates(oldSession, updated);
 
   res.status(200).json({
     message: "Session updated successfully",

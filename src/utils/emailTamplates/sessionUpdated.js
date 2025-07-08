@@ -4,7 +4,6 @@ export const generateUpdatedSessionEmail = ({
   session,
   updatedSession,
 }) => {
-  console.log(session);
   return `
     <div style="direction: rtl; font-family: Arial; padding: 20px;">
       <h2>שלום ${fullName},</h2>
