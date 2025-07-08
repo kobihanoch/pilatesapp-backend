@@ -6,6 +6,7 @@ import mongoose from "mongoose";
 import User from "../models/userModel.js";
 import { sendMail } from "../utils/mailer.js";
 import { generateCancelledEmail } from "../utils/emailTamplates/sessionCancelled.js";
+import { generateUpdatedSessionEmail } from "../utils/emailTamplates/sessionUpdated.js";
 
 // @desc    Create a new session
 // @route   POST /api/sessions/create
@@ -170,6 +171,7 @@ export const getSessionById = async (req, res) => {
 // @access  Private/Admin
 export const updateSession = async (req, res) => {
   const session = await Session.findById(req.params.id);
+
   if (!session) throw createError(404, "Session not found");
   if (session.status === "בוטל" || session.status === "הושלם") {
     throw createError(400, "Cannot update a cancelled or completed session");
@@ -181,22 +183,58 @@ export const updateSession = async (req, res) => {
     req.body.maxParticipants = Number(req.body.maxParticipants);
   }
 
+  // Create a shallow copy for sending an email
+  const oldSession = session.toObject();
+
   Object.assign(session, req.body);
   await session.save();
   const updated = await Session.findById(req.params.id)
     .populate("participants", "fullName username email")
     .exec();
 
-  // Send an email for canclelation
-  for (const user of updated.participants) {
-    const userMail = user.email;
-    const html = generateCancelledEmail({ fullName: user.fullName, session });
-    console.log("Sending email to ", userMail);
-    await sendMail({
-      to: userMail,
-      subject: "ביטול אימון",
-      html,
-    });
+  // Check if only max participants changed
+  const onlyMaxParticipantsChanged =
+    updated.type === oldSession.type &&
+    updated.date.getTime() === new Date(oldSession.date).getTime() &&
+    updated.time === oldSession.time &&
+    updated.location === oldSession.location;
+
+  // Send emails with updates
+  if (updated.status === "בוטל") {
+    // Send an email for canclelation
+    await Promise.all(
+      updated.participants.map((user) => {
+        const userMail = user.email;
+        const html = generateCancelledEmail({
+          fullName: user.fullName,
+          session,
+        });
+        console.log("Sending email to ", userMail);
+        return sendMail({
+          to: userMail,
+          subject: "ביטול אימון",
+          html,
+        });
+      })
+    );
+  } else if (!onlyMaxParticipantsChanged) {
+    // Send an email for update
+    await Promise.all(
+      updated.participants.map((user) => {
+        const userMail = user.email;
+        const html = generateUpdatedSessionEmail({
+          fullName: user.fullName,
+          session: oldSession,
+          updatedSession: updated,
+        });
+        console.log("Sending email to ", userMail);
+        return sendMail({
+          to: userMail,
+          subject: "שינוי באימון",
+          html,
+        });
+      })
+    );
   }
 
   res.status(200).json({
@@ -257,13 +295,15 @@ export const registerToSession = async (req, res) => {
 // @route   POST /api/sessions/unregister/:id
 // @access  Private
 export const unregisterFromSession = async (req, res) => {
-  const session = await Session.findById(req.params.id);
+  let session = await Session.findById(req.params.id);
   if (!session) throw createError(404, "Session not found");
   session.participants = session.participants.filter(
     (id) => id.toString() !== req.user._id.toString()
   );
   await session.save();
-  res.status(200).json({ message: "Unregistered successfully" });
+  res
+    .status(200)
+    .json({ message: "Unregistered successfully", session: session });
 };
 
 // @desc    Get all sessions for the year of the selected date
@@ -274,9 +314,13 @@ export const getAllSessionsForThisYearFromSelectedDate = async (req, res) => {
   const year = date.getFullYear();
   const start = new Date(`${year}-01-01T00:00:00Z`);
   const end = new Date(`${year + 1}-01-01T00:00:00Z`);
-  const sessions = await Session.find({
+  let sessions = await Session.find({
     date: { $gte: start, $lt: end },
   }).populate("participants", "username email");
+
+  sessions = sessions.filter(
+    (session) => session.status !== "הושלם" && session.status !== "בוטל"
+  );
   res.json(sessions);
 };
 
