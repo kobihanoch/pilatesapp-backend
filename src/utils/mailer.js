@@ -1,7 +1,9 @@
 // utils/mailer.js
 import { Resend } from "resend";
 import createError from "http-errors";
+import dotenv from "dotenv";
 
+dotenv.config();
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const sendMail = async ({ to, subject, html }) => {
