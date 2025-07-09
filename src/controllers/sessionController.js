@@ -190,6 +190,9 @@ export const updateSession = async (req, res) => {
     .exec();
 
   // Sending an email
+  // On development - run docker-compose up --build to run the containers - server and worker(emails)
+  // On production - currently on render - it doesn'w support background jobs, only in premium account
+  // On the future - scale to AWS
   notifyParticipantsWhenSessionUpdates(oldSession, updated);
 
   res.status(200).json({
