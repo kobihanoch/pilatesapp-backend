@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.4.0](https://github.com/kobihanoch/pilatesapp-backend/compare/v1.3.0...v1.4.0) (2025-07-09)
+
+
+### Features
+
+* **Dependencies:** Add express-rate-limit package ([fb85fe5](https://github.com/kobihanoch/pilatesapp-backend/commit/fb85fe53ae992baf847e7db5a6cc89a1f9a91334))
+* **Emails:** Add expiration time to queued emails ([859c961](https://github.com/kobihanoch/pilatesapp-backend/commit/859c96143771389009c42a7ac46e4296f3c16d40))
+* **Queues:** Use bull queues and workers, instead of direct redis service. ([509a1be](https://github.com/kobihanoch/pilatesapp-backend/commit/509a1be9c8189b84b1ebadca61fae3d00a40bb86))
+* **RateLimiter:** Implement general rate limiter middleware for request control ([a261fa2](https://github.com/kobihanoch/pilatesapp-backend/commit/a261fa2012d40c94d27067cfe234aaad73f541e9))
+
 ## [1.3.0](https://github.com/kobihanoch/pilatesapp-backend/compare/v1.2.0...v1.3.0) (2025-07-09)
 
 
