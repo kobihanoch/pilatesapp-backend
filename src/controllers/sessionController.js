@@ -1,12 +1,9 @@
 // src/controllers/sessionController.js
 
 import createError from "http-errors";
-import Session from "../models/sessionModel.js";
 import mongoose from "mongoose";
+import Session from "../models/sessionModel.js";
 import User from "../models/userModel.js";
-import { sendMail } from "../config/mailer.js";
-import { generateCancelledEmail } from "../utils/emailTamplates/sessionCancelled.js";
-import { generateUpdatedSessionEmail } from "../utils/emailTamplates/sessionUpdated.js";
 import { notifyParticipantsWhenSessionUpdates } from "../services/emailService.js";
 
 // @desc    Create a new session
