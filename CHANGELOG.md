@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.3.0](https://github.com/kobihanoch/pilatesapp-backend/compare/v1.2.0...v1.3.0) (2025-07-09)
+
+
+### Features
+
+* **Email:** Implement email queueing system with Redis and worker (Docker compose) ([078c8a4](https://github.com/kobihanoch/pilatesapp-backend/commit/078c8a4639ac1c117e75f5bc8aa08ca29a6f74a3))
+* **Redis:** Connect Redis client and update dependencies ([a665157](https://github.com/kobihanoch/pilatesapp-backend/commit/a665157720075ddb82c20751354383c05c1b3ec5))
+* **Sessions:** Add email notification for updated sessions ([3c3353b](https://github.com/kobihanoch/pilatesapp-backend/commit/3c3353b9e578447dbae4f5004a628b1eedf880bc))
+* **Sessions:** Added an endpoint to fetch all completed sessions for an authenticated user ([f4fb25c](https://github.com/kobihanoch/pilatesapp-backend/commit/f4fb25c68d09eb07c836b858231f60910ac80ae2))
+* **Sessions:** Implement email notifications for cancelled sessions and add mailer utility (Resend) ([f06f272](https://github.com/kobihanoch/pilatesapp-backend/commit/f06f27235138d7070cec0d7a34609eed7c89ddc6))
+
+
+### Bug Fixes
+
+* **Emails:** Emails are now sent properly ([c7ca5f0](https://github.com/kobihanoch/pilatesapp-backend/commit/c7ca5f0c856d72d62628e385f4d3896e36f9c04e))
+* **UpcomingSessions:** Fixed incorrect sorting ([19f9d22](https://github.com/kobihanoch/pilatesapp-backend/commit/19f9d22692f1a19d810939b0db34a610b11676f3))
+
 ## [1.2.0](https://github.com/kobihanoch/pilatesapp-backend/compare/v1.1.0...v1.2.0) (2025-07-01)
 
 
