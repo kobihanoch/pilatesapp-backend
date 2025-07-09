@@ -6,6 +6,12 @@ const startEmailWorker = async () => {
   emailQueue.process(5, async (job) => {
     const { to, subject, html } = job.data;
     try {
+      // Preventing overflowing of emails
+      if (expiresAt && Date.now() > expiresAt) {
+        console.log(`⏱️ Skipping expired email to ${to}`);
+        return;
+      }
+
       await sendMail({ to, subject, html });
       console.log("Email worker: email sent to", to);
     } catch (e) {
