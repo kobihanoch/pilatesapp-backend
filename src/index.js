@@ -7,6 +7,7 @@ import authRoutes from "./routes/authRoutes.js";
 import sessionRoutes from "./routes/sessionRoutes.js";
 import cookieParser from "cookie-parser";
 import { errorHandler } from "./middlewares/errorHandler.js";
+import { connectRedis } from "./config/redisClient.js";
 
 // Config-------------------------------------------------------------------
 dotenv.config();
@@ -46,7 +47,8 @@ app.use(
   })
 );
 app.use(express.json());
-connectDB(); // Connect to MongoDB
+await connectDB(); // Connect to MongoDB
+await connectRedis(); // Connect to Redis
 
 // Notify the server is running
 app.get("/", (req, res) => {

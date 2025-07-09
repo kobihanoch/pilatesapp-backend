@@ -125,6 +125,61 @@ npm start
 
 ---
 
+# Email Queue System (Redis + Worker) 📬
+
+This backend supports **background email dispatching** using a **Redis-powered job queue**, allowing the system to handle high volumes of session updates or cancellations without blocking the main server thread.
+
+## 🧩 How it works:
+
+- When a session is **updated** or **cancelled**, the server pushes email jobs into a Redis queue called `emailQueue`.
+- A **separate background worker** (`emailWorker.js`) continuously listens to the queue and sends out emails using `Resend`.
+
+## 📂 Related files:
+
+- `src/producers/emailProducer.js` – pushes jobs to Redis.
+- `src/workers/emailWorker.js` – worker that processes email jobs.
+- `src/config/redisClient.js` – Redis connection setup.
+
+## 🛠️ Running Locally:
+
+This is handled via Docker Compose. The worker runs as a separate service:
+
+```yaml
+version: "3.8"
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "5000:5000"
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    command: node src/workers/emailWorker.js
+```
+
+Run the full system with:
+
+```bash
+docker compose up --build
+```
+
+> 💡 You can still run the server without the worker. In that case, the emails will **not be sent**, but the system will **not crash**.
+
+## 🌐 Deploying on Render (Without Worker)
+
+By default, Render runs only the `Dockerfile`'s `CMD`, which starts the main Express server (`index.js`).  
+The background worker will **not** run unless deployed separately (which requires a [paid Render plan](https://render.com/pricing)).
+
+---
+
 ## Frontend Application 🌐
 
 A modern frontend for this project is under development.  

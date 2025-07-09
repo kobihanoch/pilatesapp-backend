@@ -4,6 +4,10 @@ import createError from "http-errors";
 import Session from "../models/sessionModel.js";
 import mongoose from "mongoose";
 import User from "../models/userModel.js";
+import { sendMail } from "../utils/mailer.js";
+import { generateCancelledEmail } from "../utils/emailTamplates/sessionCancelled.js";
+import { generateUpdatedSessionEmail } from "../utils/emailTamplates/sessionUpdated.js";
+import { notifyParticipantsWhenSessionUpdates } from "../services/emailService.js";
 
 // @desc    Create a new session
 // @route   POST /api/sessions/create
@@ -48,14 +52,59 @@ export const createSession = async (req, res) => {
   res.status(201).json(session);
 };
 
-// @desc    Get all sessions the user is registered to
-// @route   GET /api/sessions/my
+// @desc    Get all upcoming sessions for user
+// @route   GET /api/sessions/myupcoming
 // @access  Private
-export const getMySessions = async (req, res) => {
-  const sessions = await Session.find({ participants: req.user._id }).populate(
+export const getMyUpcomingSessions = async (req, res) => {
+  let sessions = await Session.find({ participants: req.user._id }).populate(
     "participants",
     "username email fullName"
   );
+
+  sessions = sessions
+    .filter((s) => s.status === "מתוכנן")
+    .sort((a, b) => {
+      const aDateTime = new Date(a.date);
+      aDateTime.setHours(
+        Number(a.time.split(":")[0]),
+        Number(a.time.split(":")[1])
+      );
+      const bDateTime = new Date(b.date);
+      bDateTime.setHours(
+        Number(b.time.split(":")[0]),
+        Number(b.time.split(":")[1])
+      );
+      return aDateTime - bDateTime;
+    });
+
+  res.json(sessions);
+};
+
+// @desc    Get all sessions the user is registered to
+// @route   GET /api/sessions/mycompleted
+// @access  Private
+export const getMyCompletedSessions = async (req, res) => {
+  let sessions = await Session.find({ participants: req.user._id }).populate(
+    "participants",
+    "username email fullName"
+  );
+
+  sessions = sessions
+    .filter((s) => s.status === "הושלם")
+    .sort((a, b) => {
+      const aDateTime = new Date(a.date);
+      aDateTime.setHours(
+        Number(a.time.split(":")[0]),
+        Number(a.time.split(":")[1])
+      );
+      const bDateTime = new Date(b.date);
+      bDateTime.setHours(
+        Number(b.time.split(":")[0]),
+        Number(b.time.split(":")[1])
+      );
+      return aDateTime - bDateTime;
+    });
+
   res.json(sessions);
 };
 
@@ -119,6 +168,7 @@ export const getSessionById = async (req, res) => {
 // @access  Private/Admin
 export const updateSession = async (req, res) => {
   const session = await Session.findById(req.params.id);
+
   if (!session) throw createError(404, "Session not found");
   if (session.status === "בוטל" || session.status === "הושלם") {
     throw createError(400, "Cannot update a cancelled or completed session");
@@ -130,20 +180,25 @@ export const updateSession = async (req, res) => {
     req.body.maxParticipants = Number(req.body.maxParticipants);
   }
 
+  // Create a shallow copy for sending an email
+  const oldSession = session.toObject();
+
   Object.assign(session, req.body);
   await session.save();
   const updated = await Session.findById(req.params.id)
     .populate("participants", "fullName username email")
     .exec();
 
+  // Sending an email
+  // On development - run docker-compose up --build to run the containers - server and worker(emails)
+  // On production - currently on render - it doesn'w support background jobs, only in premium account
+  // On the future - scale to AWS
+  notifyParticipantsWhenSessionUpdates(oldSession, updated);
+
   res.status(200).json({
     message: "Session updated successfully",
     session: updated,
   });
-
-  res
-    .status(200)
-    .json({ message: "Session updated successfully", session: updated });
 };
 
 // @desc    Delete a session by ID
@@ -198,13 +253,15 @@ export const registerToSession = async (req, res) => {
 // @route   POST /api/sessions/unregister/:id
 // @access  Private
 export const unregisterFromSession = async (req, res) => {
-  const session = await Session.findById(req.params.id);
+  let session = await Session.findById(req.params.id);
   if (!session) throw createError(404, "Session not found");
   session.participants = session.participants.filter(
     (id) => id.toString() !== req.user._id.toString()
   );
   await session.save();
-  res.status(200).json({ message: "Unregistered successfully" });
+  res
+    .status(200)
+    .json({ message: "Unregistered successfully", session: session });
 };
 
 // @desc    Get all sessions for the year of the selected date
@@ -215,9 +272,13 @@ export const getAllSessionsForThisYearFromSelectedDate = async (req, res) => {
   const year = date.getFullYear();
   const start = new Date(`${year}-01-01T00:00:00Z`);
   const end = new Date(`${year + 1}-01-01T00:00:00Z`);
-  const sessions = await Session.find({
+  let sessions = await Session.find({
     date: { $gte: start, $lt: end },
   }).populate("participants", "username email");
+
+  sessions = sessions.filter(
+    (session) => session.status !== "הושלם" && session.status !== "בוטל"
+  );
   res.json(sessions);
 };
 
