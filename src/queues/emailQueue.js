@@ -1,6 +1,9 @@
-import { Queue } from "bullmq";
-import { redis } from "../config/redisClient.js";
+import Bull from "bull";
 
-export const emailQueue = new Queue("emailQueue", {
-  connection: redis,
-});
+let emailQueue;
+
+if (!emailQueue) {
+  emailQueue = new Bull("emailQueue", process.env.REDIS_URL);
+}
+
+export default emailQueue;
