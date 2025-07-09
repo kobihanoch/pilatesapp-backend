@@ -1,6 +1,6 @@
 import { generateCancelledEmail } from "../utils/emailTamplates/sessionCancelled.js";
 import { generateUpdatedSessionEmail } from "../utils/emailTamplates/sessionUpdated.js";
-import { sendMail } from "../utils/mailer.js";
+import { enqueueEmails } from "../producers/emailProducer.js";
 
 export const notifyParticipantsWhenSessionUpdates = async (
   oldSession,
@@ -13,41 +13,35 @@ export const notifyParticipantsWhenSessionUpdates = async (
     updatedSession.time === oldSession.time &&
     updatedSession.location === oldSession.location;
 
+  const emailsArray = [];
   // Send emails with updates
   if (updatedSession.status === "בוטל") {
     // Send an email for canclelation
-    await Promise.all(
-      updatedSession.participants.map((user) => {
-        const userMail = user.email;
-        const html = generateCancelledEmail({
+    updatedSession.participants.forEach((user) => {
+      emailsArray.push({
+        to: user.email,
+        subject: "ביטול אימון",
+        html: generateCancelledEmail({
           fullName: user.fullName,
           session: oldSession,
-        });
-        console.log("Sending email to ", userMail);
-        return sendMail({
-          to: userMail,
-          subject: "ביטול אימון",
-          html,
-        });
-      })
-    );
+        }),
+      });
+    });
   } else if (!onlyMaxParticipantsChanged) {
     // Send an email for update
-    await Promise.all(
-      updatedSession.participants.map((user) => {
-        const userMail = user.email;
-        const html = generateUpdatedSessionEmail({
+    updatedSession.participants.forEach((user) => {
+      emailsArray.push({
+        to: user.email,
+        subject: "עדכון אימון",
+        html: generateUpdatedSessionEmail({
           fullName: user.fullName,
           session: oldSession,
           updatedSession: updatedSession,
-        });
-        console.log("Sending email to ", userMail);
-        return sendMail({
-          to: userMail,
-          subject: "שינוי באימון",
-          html,
-        });
-      })
-    );
+        }),
+      });
+    });
   }
+
+  // Add to queue
+  if (emailsArray.length > 0) await enqueueEmails(emailsArray);
 };

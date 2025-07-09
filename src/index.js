@@ -48,7 +48,7 @@ app.use(
 );
 app.use(express.json());
 await connectDB(); // Connect to MongoDB
-await connectRedis();
+await connectRedis(); // Connect to Redis
 
 // Notify the server is running
 app.get("/", (req, res) => {
