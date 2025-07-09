@@ -8,6 +8,7 @@ import sessionRoutes from "./routes/sessionRoutes.js";
 import cookieParser from "cookie-parser";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import { connectRedis } from "./config/redisClient.js";
+import { generalLimiter } from "./middlewares/rateLimiter.js";
 
 // Config-------------------------------------------------------------------
 dotenv.config();
@@ -40,13 +41,24 @@ const allowedOrigins = [
     credentials: true,
   })
 );*/
+// Apply CORS
 app.use(
   cors({
     origin: true,
     credentials: true,
   })
 );
+
+// Use express
 app.use(express.json());
+
+// Trust proxy to get the request device IP for rate limiting
+// IMPORTANT: Allow it only if using secured cloud services like Render, AWS, Azure, etc...
+app.set("trust proxy", 1);
+
+// Use general rate limiter
+app.use(generalLimiter);
+
 await connectDB(); // Connect to MongoDB
 await connectRedis(); // Connect to Redis
 
