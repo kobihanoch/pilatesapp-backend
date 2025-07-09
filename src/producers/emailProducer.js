@@ -1,9 +1,9 @@
 // producers/emailProducer.js
-import { redis } from "../config/redisClient.js";
+import emailQueue from "../queues/emailQueue.js";
 
 // Add jobs to queue
 export const enqueueEmails = async (emails) => {
-  for (const email of emails) {
-    await redis.lPush("emailQueue", JSON.stringify(email));
-  }
+  await emailQueue.addBulk(
+    emails.map((e) => ({ data: e, opts: { attempts: 3, backoff: 5000 } }))
+  );
 };

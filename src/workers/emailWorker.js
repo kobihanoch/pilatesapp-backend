@@ -1,31 +1,23 @@
-import { redis, connectRedis } from "../config/redisClient.js";
-import { sendMail } from "../utils/mailer.js";
-import createError from "http-errors";
+import { sendMail } from "../config/mailer.js";
+import emailQueue from "../queues/emailQueue.js";
 
 const startEmailWorker = async () => {
   console.log("📬 Email-Worker started – waiting for jobs…");
-  await connectRedis();
-
-  while (true) {
+  emailQueue.process(5, async (job) => {
+    const { to, subject, html } = job.data;
     try {
-      const res = await redis.brPop("emailQueue", 0);
-
-      if (!res) continue;
-
-      const emailData = JSON.parse(res.element); // { to, subject, html }
-      console.log("▶︎ Sending email to:", emailData.to);
-
-      try {
-        await sendMail(emailData);
-        console.log("✅ Sent:", emailData.to);
-      } catch (err) {
-        console.log("❌ Failed:", emailData.to, err.message);
-      }
-    } catch (err) {
-      console.log("⚠️ Worker error — retrying in 5 s:", err.message);
-      await new Promise((r) => setTimeout(r, 5000));
+      await sendMail({ to, subject, html });
+      console.log("Email worker: email sent to", to);
+    } catch (e) {
+      console.log(`❌ Failed to send email to ${to}: ${e.message}`);
+      throw e;
     }
-  }
+  });
+  process.on("SIGINT", async () => {
+    console.log("👋 Gracefully shutting down email worker...");
+    await emailQueue.close();
+    process.exit(0);
+  });
 };
 
 startEmailWorker();
