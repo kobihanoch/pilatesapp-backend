@@ -1,17 +1,15 @@
-import express from "express";
-import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
 import cors from "cors";
+import dotenv from "dotenv";
+import express from "express";
+import helmet from "helmet";
 import connectDB from "./config/db.js";
-import userRoutes from "./routes/userRoutes.js";
+import { connectRedis } from "./config/redisClient.js";
+import { errorHandler } from "./middlewares/errorHandler.js";
+import { generalLimiter } from "./middlewares/rateLimiter.js";
 import authRoutes from "./routes/authRoutes.js";
 import sessionRoutes from "./routes/sessionRoutes.js";
-import cookieParser from "cookie-parser";
-import { errorHandler } from "./middlewares/errorHandler.js";
-import { connectRedis } from "./config/redisClient.js";
-import { generalLimiter } from "./middlewares/rateLimiter.js";
-import xss from "xss-clean";
-import mongoSanitize from "express-mongo-sanitize";
-import helmet from "helmet";
+import userRoutes from "./routes/userRoutes.js";
 
 // Config-------------------------------------------------------------------
 dotenv.config();
@@ -54,10 +52,6 @@ app.use(
 
 // Use express
 app.use(express.json());
-
-// Using anti xss and NoSQL injections
-app.use(xss());
-app.use(mongoSanitize());
 
 // Use helmet
 app.use(helmet());
