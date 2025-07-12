@@ -9,6 +9,8 @@ import cookieParser from "cookie-parser";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import { connectRedis } from "./config/redisClient.js";
 import { generalLimiter } from "./middlewares/rateLimiter.js";
+import xss from "xss-clean";
+import mongoSanitize from "express-mongo-sanitize";
 
 // Config-------------------------------------------------------------------
 dotenv.config();
@@ -51,6 +53,10 @@ app.use(
 
 // Use express
 app.use(express.json());
+
+// Using anti xss and NoSQL injections
+app.use(xss());
+app.use(mongoSanitize());
 
 // Trust proxy to get the request device IP for rate limiting
 // IMPORTANT: Allow it only if using secured cloud services like Render, AWS, Azure, etc...
