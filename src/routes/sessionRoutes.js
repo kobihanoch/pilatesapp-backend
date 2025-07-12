@@ -17,6 +17,8 @@ import {
 import { asyncHandler } from "../middlewares/asyncHandler.js";
 import { protect } from "../middlewares/authMiddleware.js";
 import { authorizeRoles } from "../middlewares/roleMiddleware.js";
+import { validate } from "../middlewares/validateRequest.js";
+import { editSessionSchema } from "../validators/admin/editSession.schema.js";
 
 const router = Router();
 
@@ -25,6 +27,7 @@ router.post(
   "/create",
   protect,
   authorizeRoles("admin"),
+  validate(editSessionSchema),
   asyncHandler(createSession)
 ); // Admin - Create a new session
 router.get(
@@ -37,6 +40,7 @@ router.put(
   "/update/:id",
   protect,
   authorizeRoles("admin"),
+  validate(editSessionSchema),
   asyncHandler(updateSession)
 ); // Admin - Update a session by ID
 router.delete(
