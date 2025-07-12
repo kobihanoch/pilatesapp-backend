@@ -11,6 +11,7 @@ import { connectRedis } from "./config/redisClient.js";
 import { generalLimiter } from "./middlewares/rateLimiter.js";
 import xss from "xss-clean";
 import mongoSanitize from "express-mongo-sanitize";
+import helmet from "helmet";
 
 // Config-------------------------------------------------------------------
 dotenv.config();
@@ -57,6 +58,9 @@ app.use(express.json());
 // Using anti xss and NoSQL injections
 app.use(xss());
 app.use(mongoSanitize());
+
+// Use helmet
+app.use(helmet());
 
 // Trust proxy to get the request device IP for rate limiting
 // IMPORTANT: Allow it only if using secured cloud services like Render, AWS, Azure, etc...
