@@ -7,7 +7,7 @@ const startEmailWorker = async () => {
     const { to, subject, html } = job.data;
     try {
       // Preventing overflowing of emails
-      if (expiresAt && Date.now() > expiresAt) {
+      if (job.data.expiresAt && Date.now() > job.data.expiresAt) {
         console.log(`⏱️ Skipping expired email to ${to}`);
         return;
       }

@@ -9,13 +9,10 @@ import User from "../models/userModel.js";
 // @access  Public
 export const createUser = async (req, res) => {
   const { username, fullName, email, password, birthDate, gender } = req.body;
-  if (!username || !fullName || !email || !password || !birthDate || !gender) {
-    throw createError(400, "All fields are required");
-  }
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) throw createError(400, "Invalid email format");
+  // Check if user already exists
   if (await User.findOne({ email }))
     throw createError(400, "User already exists");
+
   const salt = await bcrypt.genSalt(10);
   const hash = await bcrypt.hash(password, salt);
   const user = await User.create({
@@ -95,32 +92,10 @@ export const getUserById = async (req, res) => {
 // @route   PUT /api/users/update/:id
 // @access  Private/Admin
 export const updateUser = async (req, res) => {
-  /* ---------- ❶ locate user ---------- */
+  // Locate user
   const user = await User.findById(req.params.id).select("+role"); // role is normally hidden
   if (!user) throw createError(404, "User not found");
 
-  /* ---------- ❷ sanitise payload ---------- */
-  // Never allow password changes through this endpoint
-  if ("password" in req.body) delete req.body.password;
-
-  // Normalise e-mail & username casing/spacing
-  if (req.body.email) req.body.email = req.body.email.toLowerCase().trim();
-  if (req.body.username) req.body.username = req.body.username.trim();
-
-  // Convert birthDate if a string (HTML `<input type="date">` comes as “YYYY-MM-DD”)
-  if (req.body.birthDate !== undefined) {
-    req.body.birthDate = new Date(req.body.birthDate);
-  }
-
-  // Ensure role & gender values are legal (optional but nice-to-have)
-  const allowedRoles = ["user", "admin"];
-  const allowedGenders = ["male", "female", "other"];
-  if (req.body.role && !allowedRoles.includes(req.body.role))
-    throw createError(400, "Invalid role value");
-  if (req.body.gender && !allowedGenders.includes(req.body.gender))
-    throw createError(400, "Invalid gender value");
-
-  /* ---------- ❸ apply & persist ---------- */
   Object.assign(user, req.body);
   await user.save();
 
