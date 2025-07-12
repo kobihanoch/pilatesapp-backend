@@ -11,9 +11,8 @@ import BlacklistedToken from "../models/blacklistedTokenModel.js";
 // @access  Public
 export const loginUser = async (req, res) => {
   const { username, password } = req.body;
-  if (!username || !password) {
-    throw createError(400, "Username and password are required");
-  }
+
+  // Validate data
   const user = await User.findOne({ username }).select("+password");
   if (!user) throw createError(401, "Invalid credentials");
 

@@ -11,11 +11,14 @@ import {
 } from "../controllers/userController.js";
 import { protect } from "../middlewares/authMiddleware.js";
 import { authorizeRoles } from "../middlewares/roleMiddleware.js";
+import { validate } from "../middlewares/validateRequest.js";
+import { registerSchema } from "../validators/auth/register.schema.js";
+import { editUserSchema } from "../validators/admin/editUser.schema.js";
 
 const router = Router();
 
 // Public routes
-router.post("/create", asyncHandler(createUser)); // Public - Create a new user (registration)
+router.post("/create", validate(registerSchema), asyncHandler(createUser)); // Public - Create a new user (registration)
 
 // User routes
 router.get("/get", protect, asyncHandler(getAuthenticatedUserById)); // User - Get their own profile
@@ -28,6 +31,7 @@ router.put(
   "/update/:id",
   protect,
   authorizeRoles("admin"),
+  validate(editUserSchema),
   asyncHandler(updateUser)
 ); // Admin - Update a specific user by ID
 router.delete(
