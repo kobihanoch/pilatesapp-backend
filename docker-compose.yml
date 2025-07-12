@@ -1,7 +1,5 @@
-version: "3.8"
-
 services:
-  server:
+  mainserver:
     build:
       context: .
       dockerfile: Dockerfile
@@ -10,10 +8,10 @@ services:
     ports:
       - "5000:5000"
 
-  worker:
+  globalworker:
     build:
       context: .
       dockerfile: Dockerfile
     env_file:
       - .env
-    command: node src/workers/emailWorker.js
+    command: node src/workers/globalWorker.js
