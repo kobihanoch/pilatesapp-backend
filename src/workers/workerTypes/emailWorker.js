@@ -1,8 +1,8 @@
-import { sendMail } from "../config/mailer.js";
-import emailQueue from "../queues/emailQueue.js";
+import emailQueue from "../../queues/emailQueue.js";
+import { sendMail } from "../../config/mailer.js";
 
-const startEmailWorker = async () => {
-  console.log("📬 Email-Worker started – waiting for jobs…");
+export const startEmailWorker = async () => {
+  console.log("Email worker is up - ready for sending emails!");
   emailQueue.process(5, async (job) => {
     const { to, subject, html } = job.data;
     try {
@@ -19,11 +19,6 @@ const startEmailWorker = async () => {
       throw e;
     }
   });
-  process.on("SIGINT", async () => {
-    console.log("👋 Gracefully shutting down email worker...");
-    await emailQueue.close();
-    process.exit(0);
-  });
-};
 
-startEmailWorker();
+  return emailQueue; // For shutdown
+};
