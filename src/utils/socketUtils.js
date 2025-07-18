@@ -1,3 +1,5 @@
+import { getIO } from "../config/webSocket.js";
+
 const userSockets = new Map();
 
 export const setNewSocketConnection = (userId, socketId) => {
@@ -9,6 +11,11 @@ export const removeASocketConnection = (socketId) => {
   for (const [userId, sId] of userSockets.entries()) {
     if (sId === socketId) userSockets.delete(userId);
   }
+};
+
+export const sendServerMessageToUser = async (userId, message) => {
+  const io = getIO();
+  io.to(String(userId)).emit("received_messages", message);
 };
 
 export const getOnlineUsersConnected = () => {

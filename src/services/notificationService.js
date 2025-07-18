@@ -1,6 +1,7 @@
+import { enqueueEmails } from "../producers/emailProducer.js";
 import { generateCancelledEmail } from "../utils/emailTamplates/sessionCancelled.js";
 import { generateUpdatedSessionEmail } from "../utils/emailTamplates/sessionUpdated.js";
-import { enqueueEmails } from "../producers/emailProducer.js";
+import { sendServerMessageToUser } from "../utils/socketUtils.js";
 
 export const notifyParticipantsWhenSessionUpdates = async (
   oldSession,
@@ -26,6 +27,12 @@ export const notifyParticipantsWhenSessionUpdates = async (
           session: oldSession,
         }),
       });
+      // Live notification socket
+      sendServerMessageToUser(user._id, {
+        from: "מערכת",
+        header: "שינוי באימון",
+        body: `שלום ${user.fullName}!\n האימון שאתה רשום אליו בוטל`,
+      });
     });
   } else if (!onlyMaxParticipantsChanged) {
     // Send an email for update
@@ -38,6 +45,12 @@ export const notifyParticipantsWhenSessionUpdates = async (
           session: oldSession,
           updatedSession: updatedSession,
         }),
+      });
+      // Live notification socket
+      sendServerMessageToUser(user._id, {
+        from: "מערכת",
+        header: "שינוי באימון",
+        body: `שלום ${user.fullName}!\n בוצע שינוי באימון שאתה רשום אליו.`,
       });
     });
   }

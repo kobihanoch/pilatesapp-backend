@@ -6,7 +6,16 @@ import {
   setNewSocketConnection,
 } from "../utils/socketUtils.js";
 
-export let io = null;
+let io = null;
+export const getIO = () => {
+  if (!io) {
+    throw new Error("Socket.IO not initialized!");
+  }
+  return io;
+};
+export const setIO = (val) => {
+  io = val;
+};
 
 export const createIOServer = (app) => {
   const server = createServer(app);
@@ -17,6 +26,7 @@ export const createIOServer = (app) => {
       credentials: true,
     },
   });
+  setIO(io);
   return { io, server };
 };
 
@@ -33,7 +43,7 @@ export const startSocket = async () => {
     // On auth
     socket.on("user_loggedin", (userId) => {
       setNewSocketConnection(userId, socket.id);
-      socket.join(userId); // Creates a unqiue room for comuunication, key is user ID
+      socket.join(String(userId)); // Creates a unqiue room for comuunication, key is user ID
       console.log("New user connected:", userId);
     });
 
