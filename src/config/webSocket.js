@@ -34,8 +34,9 @@ export const startSocket = async (io) => {
     );
 
     // On auth
-    socket.on("user_connected", (userId) => {
+    socket.on("user_loggedin", (userId) => {
       setNewSocketConnection(userId, socket.id);
+      socket.join(userId); // Creates a unqiue room for comuunication, key is user ID
       console.log("New user connected:", userId);
     });
 
