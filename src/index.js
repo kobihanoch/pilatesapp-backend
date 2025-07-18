@@ -10,17 +10,22 @@ import { generalLimiter } from "./middlewares/rateLimiter.js";
 import authRoutes from "./routes/authRoutes.js";
 import sessionRoutes from "./routes/sessionRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
+import { createIOServer, startSocket } from "./config/webSocket.js";
+import { createServer } from "http";
 
-// Config-------------------------------------------------------------------
+// RESOURECES CONNECTIONS AND GENERAL CONFIGURATIONS  ------------------------------------------
 dotenv.config();
+
+// Create an express server
 const app = express();
 
-// Port
+// Define port
 const PORT = process.env.PORT || 5000;
 
-app.use(cookieParser());
+await connectDB(); // Connect to MongoDB
+await connectRedis(); // Connect to Redis
 
-// CORS allowance-----------------------------------------------------
+// MIDDLWARES ----------------------------------------------------------------------------------
 const allowedOrigins = [
   process.env.SHILAT_IP,
   process.env.HOME_IP,
@@ -42,6 +47,7 @@ const allowedOrigins = [
     credentials: true,
   })
 );*/
+
 // Apply CORS
 app.use(
   cors({
@@ -50,7 +56,10 @@ app.use(
   })
 );
 
-// Use express
+// For using cookies
+app.use(cookieParser());
+
+// Use express JSON formats
 app.use(express.json());
 
 // Use helmet
@@ -63,9 +72,6 @@ app.set("trust proxy", 1);
 // Use general rate limiter
 app.use(generalLimiter);
 
-await connectDB(); // Connect to MongoDB
-await connectRedis(); // Connect to Redis
-
 // Notify the server is running
 app.get("/", (req, res) => {
   res.send("Server is running...");
@@ -74,12 +80,7 @@ app.get("/", (req, res) => {
 // Health check
 app.get("/health", (req, res) => res.status(200).json({ status: "ok" }));
 
-// Listening to the server
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
-
-// API Routes---------------------------------------------------------------
+// API ROUTES --------------------------------------------------------------------------------------------------
 
 // Users
 app.use("/api/users", userRoutes);
@@ -92,3 +93,12 @@ app.use("/api/sessions", sessionRoutes);
 
 // Error Handler
 app.use(errorHandler);
+
+// SOCKET CONNECTIONS ---------------------------------------------------------------------------------------------
+const { io, server } = createIOServer(app);
+await startSocket(io);
+
+// LISTEN TO PORT ------------------------------------------------------------------------------------------------
+server.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
