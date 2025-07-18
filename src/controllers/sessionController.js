@@ -4,7 +4,7 @@ import createError from "http-errors";
 import mongoose from "mongoose";
 import Session from "../models/sessionModel.js";
 import User from "../models/userModel.js";
-import { notifyParticipantsWhenSessionUpdates } from "../services/emailService.js";
+import { notifyParticipantsWhenSessionUpdates } from "../services/notificationService.js";
 
 // @desc    Create a new session
 // @route   POST /api/sessions/create
@@ -153,7 +153,7 @@ export const updateSession = async (req, res) => {
 
   // Sending an email
   // On development - run docker-compose up --build to run the containers - server and worker(emails)
-  // On production - currently on render - it doesn'w support background jobs, only in premium account
+  // On production - currently on render - it doesn't support background jobs, only in premium account
   // On the future - scale to AWS
   notifyParticipantsWhenSessionUpdates(oldSession, updated);
 
