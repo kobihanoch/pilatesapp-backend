@@ -1,10 +1,5 @@
 import { createServer } from "http";
 import { Server } from "socket.io";
-import {
-  getOnlineUsersConnected,
-  removeASocketConnection,
-  setNewSocketConnection,
-} from "../utils/socketUtils.js";
 
 let io = null;
 export const getIO = () => {
@@ -32,29 +27,15 @@ export const createIOServer = (app) => {
 
 export const startSocket = async () => {
   io.on("connection", (socket) => {
-    console.log(
-      "A new socket connection.",
-      Date(),
-      "\nCurrently there are",
-      Number(getOnlineUsersConnected() + 1),
-      "connections open."
-    );
+    console.log("New connection:", Date());
 
-    // On auth
     socket.on("user_loggedin", (userId) => {
-      setNewSocketConnection(userId, socket.id);
-      socket.join(String(userId)); // Creates a unqiue room for comuunication, key is user ID
-      console.log("New user connected:", userId);
+      socket.join(String(userId));
+      console.log("User joined room:", userId);
     });
 
-    // On disconnection
     socket.on("disconnect", () => {
-      removeASocketConnection(socket.id);
-      console.log(
-        "A socket disconnected. Currently there are",
-        getOnlineUsersConnected(),
-        " connections open."
-      );
+      console.log("Socket disconnected.");
     });
   });
 };
