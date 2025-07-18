@@ -6,24 +6,21 @@ import {
   setNewSocketConnection,
 } from "../utils/socketUtils.js";
 
-const userSockets = new Map();
+export let io = null;
 
 export const createIOServer = (app) => {
   const server = createServer(app);
-  return {
-    io: new Server(server, {
-      cors: {
-        origin:
-          process.env.NODE_ENV === "development" ? "*" : "<FrontDomainURL>",
-        methods: ["GET", "POST"],
-        credentials: true,
-      },
-    }),
-    server: server,
-  };
+  io = new Server(server, {
+    cors: {
+      origin: process.env.NODE_ENV === "development" ? "*" : "<FrontDomainURL>",
+      methods: ["GET", "POST"],
+      credentials: true,
+    },
+  });
+  return { io, server };
 };
 
-export const startSocket = async (io) => {
+export const startSocket = async () => {
   io.on("connection", (socket) => {
     console.log(
       "A new socket connection.",
