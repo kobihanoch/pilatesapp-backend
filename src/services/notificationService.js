@@ -1,7 +1,7 @@
 import { enqueueEmails } from "../producers/emailProducer.js";
 import { generateCancelledEmail } from "../utils/emailTamplates/sessionCancelled.js";
 import { generateUpdatedSessionEmail } from "../utils/emailTamplates/sessionUpdated.js";
-import { sendServerMessageToUser } from "../utils/socketUtils.js";
+import { notifyUser } from "../utils/notificationsUtils.js";
 
 export const notifyParticipantsWhenSessionUpdates = async (
   oldSession,
@@ -15,6 +15,9 @@ export const notifyParticipantsWhenSessionUpdates = async (
     updatedSession.location === oldSession.location;
 
   const emailsArray = [];
+  const promisesArray = [];
+  let msg = "";
+
   // Send emails with updates
   if (updatedSession.status === "בוטל") {
     // Send an email for canclelation
@@ -27,12 +30,14 @@ export const notifyParticipantsWhenSessionUpdates = async (
           session: oldSession,
         }),
       });
-      // Live notification socket
-      sendServerMessageToUser(user._id, {
-        from: "מערכת",
-        header: "שינוי באימון",
-        body: `שלום ${user.fullName}!\n האימון שאתה רשום אליו בוטל`,
-      });
+
+      // Live notification socket and DB
+      promisesArray.push(
+        notifyUser(user._id, {
+          subject: "שינוי באימון",
+          body: `שלום ${user.fullName}!\n האימון שאתה רשום אליו בוטל`,
+        })
+      );
     });
   } else if (!onlyMaxParticipantsChanged) {
     // Send an email for update
@@ -46,15 +51,20 @@ export const notifyParticipantsWhenSessionUpdates = async (
           updatedSession: updatedSession,
         }),
       });
-      // Live notification socket
-      sendServerMessageToUser(user._id, {
-        from: "מערכת",
-        header: "שינוי באימון",
-        body: `שלום ${user.fullName}!\n בוצע שינוי באימון שאתה רשום אליו.`,
-      });
+
+      // Live notification socket and DB
+      promisesArray.push(
+        notifyUser(user._id, {
+          subject: "שינוי באימון",
+          body: `שלום ${user.fullName}!\n בוצע שינוי באימון שאתה רשום אליו.`,
+        })
+      );
     });
   }
 
-  // Add to queue
+  // Add to queue- sending emails
   if (emailsArray.length > 0) await enqueueEmails(emailsArray);
+
+  // Promises - adding to DB and sending via socket
+  await Promise.all(promisesArray);
 };
