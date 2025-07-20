@@ -1,7 +1,7 @@
 import { enqueueEmails } from "../producers/emailProducer.js";
-import { generateCancelledEmail } from "../utils/emailTamplates/sessionCancelled.js";
 import { generateUpdatedSessionEmail } from "../utils/emailTamplates/sessionUpdated.js";
 import { notifyUser } from "../utils/notificationsUtils.js";
+import { generateSessionChangesMessage } from "../utils/notificationTemplates/sessionChanged.js";
 
 export const notifyParticipantsWhenSessionUpdates = async (
   oldSession,
@@ -12,7 +12,9 @@ export const notifyParticipantsWhenSessionUpdates = async (
     updatedSession.type === oldSession.type &&
     updatedSession.date.getTime() === new Date(oldSession.date).getTime() &&
     updatedSession.time === oldSession.time &&
-    updatedSession.location === oldSession.location;
+    updatedSession.location === oldSession.location &&
+    updatedSession.duration === oldSession.duration &&
+    updatedSession.notes === oldSession.notes;
 
   const emailsArray = [];
   const promisesArray = [];
@@ -25,17 +27,18 @@ export const notifyParticipantsWhenSessionUpdates = async (
       emailsArray.push({
         to: user.email,
         subject: "ביטול אימון",
-        html: generateCancelledEmail({
+        html: generateUpdatedSessionEmail({
           fullName: user.fullName,
           session: oldSession,
+          updatedSession: updatedSession,
         }),
       });
 
       // Live notification socket and DB
       promisesArray.push(
         notifyUser(user._id, {
-          subject: "שינוי באימון",
-          body: `שלום ${user.fullName}!\n האימון שאתה רשום אליו בוטל`,
+          subject: "ביטול אימון",
+          body: generateSessionChangesMessage(oldSession, updatedSession, user),
         })
       );
     });
@@ -56,7 +59,7 @@ export const notifyParticipantsWhenSessionUpdates = async (
       promisesArray.push(
         notifyUser(user._id, {
           subject: "שינוי באימון",
-          body: `שלום ${user.fullName}!\n בוצע שינוי באימון שאתה רשום אליו.`,
+          body: generateSessionChangesMessage(oldSession, updatedSession, user),
         })
       );
     });
